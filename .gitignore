@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# This is a PyPI package. Idea configuration shouldn't be included
+.idea/
