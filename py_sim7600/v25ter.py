@@ -171,7 +171,7 @@ class V25TER:
         :param times: Times to automatically answer the call. Set to 0 to disable it. Pass '?' to query current setting.
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Auto answer time set to too long or too short
         """
 
         command = "ATS0"
@@ -285,7 +285,7 @@ class V25TER:
         :param format_control: Control format
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Parity code error
         """
 
         command = "AT+ICF"
@@ -324,7 +324,7 @@ class V25TER:
         :param dte: DTE value
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Control value error
         """
 
         command = "AT+IFC"
@@ -353,7 +353,7 @@ class V25TER:
         :param dcd: The DCD setting to be set
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: DCD value error
         """
 
         if dcd < 0 or dcd > 2:
@@ -376,7 +376,7 @@ class V25TER:
         :param enable: Controls whether the command echo should be enabled
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Device echo value error
         """
 
         if enable != 0 and enable != 1:
@@ -398,7 +398,6 @@ class V25TER:
 
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
         """
 
         device.send(
@@ -418,7 +417,7 @@ class V25TER:
         :param dtr: The mode to set DTR PIN function behaviour
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: DTR Mode value error
         """
 
         if dtr < 0 or dtr > 2:
@@ -441,7 +440,7 @@ class V25TER:
         :param dsr: The mode to set DSR display
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: DSR display mode value error
         """
 
         if dsr != 0 and dsr != 1:
@@ -464,7 +463,7 @@ class V25TER:
         :param r_format: The format to set the result output
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Result format display mode value error
         """
 
         if r_format != 0 and r_format != 1:
@@ -511,7 +510,7 @@ class V25TER:
         :param dce: Set whether DCE return code is transmitted
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Result format display mode value error
         """
 
         if dce != 0 and dce != 1:
@@ -534,7 +533,7 @@ class V25TER:
         :param mode: Set whether CONNECT is returned
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Connect mode value error
         """
 
         if mode < 0 or mode > 4:
@@ -557,7 +556,7 @@ class V25TER:
         :param report: Set whether to report communication protocol
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Report mode value error
         """
 
         if report != 0 and report != 1:
@@ -577,9 +576,10 @@ class V25TER:
 
         Corresponding command: AT&E
 
+        :param speed: The speed to set
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Speed mode value error
         """
 
         if speed != 0 and speed != 1:
@@ -711,7 +711,7 @@ class V25TER:
         :param set: The character set to use
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
-        :raises V25TERException:
+        :raises V25TERException: Character set parameter error
         """
 
         command = "AT+CSCS"
