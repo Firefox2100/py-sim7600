@@ -45,6 +45,20 @@ class StatusControlException(Exception):
             print(errors)
 
 
+class NetworkException(Exception):
+    """
+    Exception raised by network commands
+    """
+
+    def __init__(self, message: str, errors=''):
+        super().__init__(message)
+
+        if errors != "":
+            self.errors = errors
+            print("Error:")
+            print(errors)
+
+
 class CallControlException(Exception):
     """
     Exception raised by call control commands
