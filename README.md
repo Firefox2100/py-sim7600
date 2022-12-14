@@ -53,6 +53,7 @@ The achieved features and steps are:
 The (currently) planned features are:
 
 - Full AT command list support
+- A detailed interface design for SIM-ME interface
 - A class for integrated functions (call, text, answer, data connection, phone book, etc.)
 
 The (currently) planned steps are:
@@ -62,3 +63,15 @@ The (currently) planned steps are:
 The features or steps that are not planned to implement are:
 
 - Any form of application support (the ability to run this library directly as backend, server, etc.)
+
+## Contribution
+
+Currently this project is developed and maintained by myself. It's too large a project for me to finish alone, so any form of help is welcomed. However, please do not donate. Instead, I'd be more than happy if you could help with develop, debug, testing, or even just give me suggestions. Feel free to email me through GitHub, or any other contact method.
+
+### Bug tracking
+
+The bug tracking should be in this repository as issues. Feel free to open an issue for bugs or suggestions, but please properly tag it, and check if there're duplications. There're templates for issues created, but if it doesn't fit the purpose, feel free to write another one.
+
+### Pull request
+
+You can open any pull request without contacting me. Any improvements to this project is welcomed, and I'll merge them as fast as I could, if there's no confliction or bugs in the pull request.

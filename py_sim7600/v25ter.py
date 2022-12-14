@@ -5,7 +5,6 @@ remember to capture accordingly.
 
 from py_sim7600.device import Device
 from py_sim7600.error import V25TERException
-from py_sim7600.call_control import CallControl
 from typing import Union
 import time
 
@@ -82,7 +81,8 @@ class V25TER:
         :raises V25TERException: Poorly formatted command
         """
 
-        memory_list = ["DC", "MC", "RC", "SM", "ME", "FD", "ON", "LD", "EN"]
+        from py_sim7600._command_lists import memory_list
+
         command = "ATD>"
         back = "OK"
 
@@ -143,6 +143,8 @@ class V25TER:
         :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
+
+        from py_sim7600.call_control import CallControl
 
         CallControl.control_voice_hangup(
             device=device,
