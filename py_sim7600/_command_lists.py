@@ -160,3 +160,20 @@ restricted_sim_file_id = {
     0x4F23: "Change counter",
     0x4F24: "Previous Unique Identifier"
 }
+"""
+This is the file ID for restricted SIM access command
+"""
+
+urc_ports = {
+    0: "all ports",
+    1: "use UART port to output URCs",
+    2: "use MODEM port to output URCs",
+    3: "use ATCOM port to output URCs",
+    4: "use cmux virtual port1 to output URCs",
+    5: "use cmux virtual port2 to output URCs",
+    6: "use cmux virtual port3 to output URCs",
+    7: "use cmux virtual port4 to output URCs"
+}
+"""
+This is the ports to use by URC interface
+"""
