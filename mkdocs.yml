@@ -1,6 +1,0 @@
-site_name: py-sim7600
-site_url: https://py-sim7600.readthedocs.io/en/latest/
-nav:
-    - Home: index.md
-    - About: about.md
-theme: readthedocs
