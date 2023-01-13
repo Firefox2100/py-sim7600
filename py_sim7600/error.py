@@ -71,3 +71,43 @@ class CallControlException(Exception):
             self.errors = errors
             print("Error:")
             print(errors)
+
+
+class PhonebookException(Exception):
+    """
+    Exception raised by phonebook commands
+    """
+
+    def __init__(self, message: str, errors=''):
+        super().__init__(message)
+
+        if errors != "":
+            self.errors = errors
+            print("Error:")
+            print(errors)
+
+class SIMApplicationToolkitException(Exception):
+    """
+    Exception raised by phonebook commands
+    """
+
+    def __init__(self, message: str, errors=''):
+        super().__init__(message)
+
+        if errors != "":
+            self.errors = errors
+            print("Error:")
+            print(errors)
+
+class GPRSException(Exception):
+    """
+    Exception raised by phonebook commands
+    """
+
+    def __init__(self, message: str, errors=''):
+        super().__init__(message)
+
+        if errors != "":
+            self.errors = errors
+            print("Error:")
+            print(errors)
