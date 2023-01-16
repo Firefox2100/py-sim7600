@@ -14,6 +14,7 @@ py-sim7600 is a PyPI package for interfacing with standard SIM7600 modems that s
    :caption: Contents:
 
    about
+   /api/index
 
 Disclaimer
 ==========
