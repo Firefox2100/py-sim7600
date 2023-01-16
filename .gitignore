@@ -130,3 +130,7 @@ dmypy.json
 
 # This is a PyPI package. Idea configuration shouldn't be included
 .idea/
+.vscode/
+
+# VIM swap files should be excluded
+*.swp

@@ -19,6 +19,7 @@ Constructor
 -----------
 
 .. code-block:: python
+
     def __init__(self, message: str, errors=''):
 
 Parameters
@@ -26,6 +27,7 @@ Parameters
     - errors: String, the detailed error information (if any).
 Usage
     .. code-block:: python
+    
         raise SIM7600Exception('Some Exception happened', 'Parameter can\'t be ' + x.toString())
 
 ---------------
@@ -38,6 +40,7 @@ Constructor
 -----------
 
 .. code-block:: python
+
     def __init__(self, message: str, errors=''):
 
 Parameters
@@ -45,6 +48,7 @@ Parameters
     - errors: String, the detailed error information (if any).
 Usage
     .. code-block:: python
+    
         raise V25TERException('Some Exception happened', 'Parameter can\'t be ' + x.toString())
 
 ----------------------
@@ -57,6 +61,7 @@ Constructor
 -----------
 
 .. code-block:: python
+
     def __init__(self, message: str, errors=''):
 
 Parameters
@@ -64,6 +69,7 @@ Parameters
     - errors: String, the detailed error information (if any).
 Usage
     .. code-block:: python
+    
         raise StatusControlException('Some Exception happened', 'Parameter can\'t be ' + x.toString())
 
 ----------------
@@ -76,6 +82,7 @@ Constructor
 -----------
 
 .. code-block:: python
+
     def __init__(self, message: str, errors=''):
 
 Parameters
@@ -83,6 +90,7 @@ Parameters
     - errors: String, the detailed error information (if any).
 Usage
     .. code-block:: python
+    
         raise NetworkException('Some Exception happened', 'Parameter can\'t be ' + x.toString())
 
 --------------------
@@ -95,6 +103,7 @@ Constructor
 -----------
 
 .. code-block:: python
+
     def __init__(self, message: str, errors=''):
 
 Parameters
@@ -102,4 +111,5 @@ Parameters
     - errors: String, the detailed error information (if any).
 Usage
     .. code-block:: python
+    
         raise CallControlException('Some Exception happened', 'Parameter can\'t be ' + x.toString())
