@@ -7,11 +7,12 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 import sphinx_rtd_theme
+import py_sim7600
 
 project = 'py-sim7600'
 copyright = '2022, Firefox2100'
 author = 'Firefox2100'
-release = '0.1.0'
+release = py_sim7600.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
