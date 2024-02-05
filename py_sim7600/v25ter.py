@@ -721,7 +721,7 @@ class V25TER:
         if check:
             command += "?"
         elif set == "IRA" or set == "GSM" or set == "UCS2":
-            command += "=" + set
+            command += '="' + set
         else:
             raise V25TERException("Character set parameter error")
 
