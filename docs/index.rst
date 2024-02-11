@@ -10,11 +10,12 @@ Py-SIM7600 Documentation
 py-sim7600 is a PyPI package for interfacing with standard SIM7600 modems that support ``AT`` commands.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 2
+    :caption: Contents:
 
-   about
-   /api/index
+    about
+    /api/index
+    /interface/index
 
 Disclaimer
 ==========

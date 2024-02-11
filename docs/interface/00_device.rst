@@ -4,7 +4,7 @@
 Device
 ======
 
-The :code:`Device` class is an interface to communicate with the SIM7600 modem. This file may raise SIM7600Exception, or any other unintended exceptions due to unforseen error. For more details with exceptions, please refer to :ref:`_topics_00_exception`.
+The :code:`Device` class is an interface to communicate with the SIM7600 modem. This file may raise DeviceException, or any other unintended exceptions due to unforeseen error. For more details with exceptions, please refer to :ref:`_topics_00_exception`.
 
 Classes
 =======

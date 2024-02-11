@@ -4,7 +4,7 @@ remember to capture accordingly.
 """
 
 from py_sim7600.device import Device
-from py_sim7600.error import GPRSException
+from py_sim7600.exceptions import GPRSException
 
 
 class Phonebook:

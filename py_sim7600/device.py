@@ -5,13 +5,13 @@ remember to capture accordingly.
 
 import serial
 import time
-from py_sim7600.error import SIM7600Exception
+from py_sim7600.exceptions import DeviceException
 
 # Attempt to import RPI.GPIO
 try:
     import RPi.GPIO as GPIO
     is_rpi = True
-except ImportError as e:
+except ImportError:
     is_rpi = False
 
 
@@ -21,6 +21,12 @@ class Device:
     """
 
     def __init__(self, port: str, baud=115200):
+        """
+        Constructor
+
+        :param port: Port to connect to
+        :param baud: Optional. Baud rate of the connection
+        """
         self.__port = port
         self.__is_rpi = is_rpi
         self.__serial = serial.Serial(port, baud)
@@ -29,11 +35,34 @@ class Device:
         self.__is_on = not self.__is_rpi
         self.__buffer = ''
 
+    def open(self):
+        """
+        Open the serial connection
+
+        :return: None
+        :raises DeviceException: If the connection fails
+        """
+
+        try:
+            self.__serial.open()
+        except serial.SerialException as e:
+            raise DeviceException() from e
+
+    def close(self):
+        """
+        Close the serial connection
+
+        :return: None
+        """
+
+        self.__serial.close()
+
     def result(self) -> str:
         """
         Fetch the result from the buffer
 
         :return: Results
+        :rtype: str
         """
 
         temp = self.__buffer
@@ -46,10 +75,10 @@ class Device:
         Turn on the device
 
         :return: None
+        :raises DeviceException: If the device is already on or no GPIO access
         """
 
         if self.__is_rpi:
-            self.__buffer += "SIM7600 is starting...\n"
             GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
             GPIO.setup(self.__power_key, GPIO.OUT)
@@ -60,23 +89,27 @@ class Device:
             time.sleep(20)
             self.__serial.reset_input_buffer()
             self.__is_on = True
-            self.__buffer += "SIM7600 is ready\n"
         else:
-            raise SIM7600Exception('No GPIO access. Not on a Raspberry Pi?')
+            raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
-    def power_down(self):
+    def power_down(self) -> None:
         """
         Turn off the device
 
         :return: None
+        :raises DeviceException: If the device is already off or no GPIO access
         """
 
-        self.__buffer += "SIM7600 is shutting down...\n"
-        GPIO.output(self.__power_key, GPIO.HIGH)
-        time.sleep(3)
-        GPIO.output(self.__power_key, GPIO.LOW)
-        time.sleep(18)
-        self.__buffer += "SIM7600 is off\n"
+        if self.__is_rpi:
+            if not self.__is_on:
+                raise DeviceException("Device not on")
+
+            GPIO.output(self.__power_key, GPIO.HIGH)
+            time.sleep(3)
+            GPIO.output(self.__power_key, GPIO.LOW)
+            time.sleep(18)
+        else:
+            raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
     def send_without_result(self, command: str, back: str = None, timeout=5) -> bool:
         """
@@ -85,11 +118,13 @@ class Device:
         :param command: Raw command to send to the string
         :param back: String expected to be in the successful result
         :param timeout: Optional. Timeout time in seconds
-        :return: Boolean value
+        :return: True if successful
+        :rtype: bool
+        :raises DeviceException: If the device is off or the command fails
         """
 
         if not self.__is_on:
-            raise SIM7600Exception("Device not on")
+            raise DeviceException("Device not on")
 
         self.__serial.write((command + "\r\n").encode())
         time.sleep(timeout)
@@ -98,11 +133,11 @@ class Device:
             self.__buffer = self.__serial.read(self.__serial.in_waiting).decode()
         if self.__buffer != '':
             if back is not None and back not in self.__buffer:
-                raise SIM7600Exception("Execution failed", self.__buffer)
+                raise DeviceException("Execution failed", self.__buffer)
             else:
                 return True
         else:
-            raise SIM7600Exception("Device timed out")
+            raise DeviceException("Device timed out")
 
     def send(self, command: str, back: str = None, timeout=5) -> str:
         """
@@ -112,6 +147,7 @@ class Device:
         :param back: String expected to be in the successful result
         :param timeout: Optional. Timeout time in seconds
         :return: Result string returned by the device
+        :rtype: str
         """
 
         self.send_without_result(command, back, timeout)

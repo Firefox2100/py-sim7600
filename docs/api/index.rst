@@ -7,7 +7,12 @@ API References
 This is a reference for all classes and methods implemented for API development.
 
 .. toctree::
-    :maxdepth: 2
-    :numbered:
+    :maxdepth: 3
+    :caption: Contents:
 
-    00_exception
+    exceptions
+    device
+    interface
+    controller/index
+
+.. automodule:: py_sim7600

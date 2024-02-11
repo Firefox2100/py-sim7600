@@ -1,4 +1,5 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
+from serial import SerialException, PortNotOpenError
 
 
 class MockSerial:
@@ -9,11 +10,12 @@ class MockSerial:
     """
 
     def __init__(self, *args, **kwargs):
-        self.port = args[0]
-        self.baudrate = args[1]
+        self._port = args[0]
+        self._baudrate = args[1]
 
         self._input_buffer = b''
         self._output_buffer = b''
+        self._is_open = False
 
         self._responses = []
         self._should_raise = kwargs.get('should_raise', False)
@@ -32,9 +34,11 @@ class MockSerial:
     def reset_output_buffer(self):
         self._output_buffer = b''
 
+    @property
     def in_waiting(self):
         return len(self._input_buffer)
 
+    @property
     def out_waiting(self):
         return len(self._output_buffer)
 
@@ -61,6 +65,9 @@ class MockSerial:
         This method is used to simulate writing data to the serial port.
         """
 
+        if not self._is_open:
+            raise PortNotOpenError()
+
         self._output_buffer += data
 
         response = self._respond(data)
@@ -71,7 +78,22 @@ class MockSerial:
         This method is used to simulate reading data from the serial port.
         """
 
+        if not self._is_open:
+            raise PortNotOpenError()
+
         data = self._input_buffer[:size]
         self._input_buffer = self._input_buffer[size:]
 
         return data
+
+    def open(self):
+        if self._port is None:
+            raise SerialException('Port is Port must be configured before it can be used.')
+
+        if self._is_open:
+            raise SerialException('Port is already open')
+
+        self._is_open = True
+
+    def close(self):
+        self._is_open = False

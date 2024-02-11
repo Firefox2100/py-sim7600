@@ -3,19 +3,16 @@ This file contains classes related to V.25TER commands. This file may raise V25T
 remember to capture accordingly.
 """
 
-from py_sim7600.device import Device
-from py_sim7600.error import V25TERException
-from typing import Union
 import time
 
+from py_sim7600.controller import SIM7600Controller
+from py_sim7600.exceptions import V25TERException
 
-class V25TER:
-    """
-    AT Commands According to V.25TER
-    """
 
-    def __init__(self, device: Device):
-        self.device = device
+class V25TERController(SIM7600Controller):
+    """
+    Controller for AT Commands According to V.25TER
+    """
 
     def re_issue(self) -> str:
         """
@@ -65,7 +62,7 @@ class V25TER:
 
         return True
 
-    def dial_from(self, target: Union[str, int], memory: str = None, voice=True) -> bool:
+    def dial_from(self, target: str | int, memory: str = None, voice=True) -> bool:
         """
         Originate call from specified memory or active memory
 
@@ -132,7 +129,7 @@ class V25TER:
         :return: True if call is disconnected
         """
 
-        from py_sim7600.call_control import CallControl
+        from controller.call_control import CallControl
 
         call_controller = CallControl(self.device)
 

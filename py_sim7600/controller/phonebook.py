@@ -4,7 +4,7 @@ remember to capture accordingly.
 """
 
 from py_sim7600.device import Device
-from py_sim7600.error import PhonebookException
+from py_sim7600.exceptions import PhonebookException
 
 
 class Phonebook:
