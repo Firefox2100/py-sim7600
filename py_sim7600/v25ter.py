@@ -14,25 +14,25 @@ class V25TER:
     AT Commands According to V.25TER
     """
 
-    @staticmethod
-    def re_issue(device: Device) -> str:
+    def __init__(self, device: Device):
+        self.device = device
+
+    def re_issue(self) -> str:
         """
         Re-issues the Last Command Given
 
         Corresponding command: A/
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: Results of the last command
         """
-        device.send(
-            command="A/",
-            back="OK",
+
+        result = self.device.send(
+            command='A/',
         )
 
-        return device.result()
+        return result
 
-    @staticmethod
-    def dial(device: Device, number: str, anonymous=False, cug_invocation=False, voice=True) -> str:
+    def dial(self, number: str, anonymous=False, cug_invocation=False, voice=True) -> bool:
         """
         Mobile Originated Call to Dial A Number
 
@@ -42,32 +42,30 @@ class V25TER:
         :param cug_invocation: Control whether this call should invoke Closed User Group
         :param anonymous: Control whether to display caller number
         :param number: Number to call
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: True if call is successful
         """
 
-        command = "ATD" + number
-        back = "OK"
+        command = 'ATD' + number
+        back = 'OK'
         if anonymous:
-            command += "I"
+            command += 'I'
 
         if cug_invocation:
-            command += "G"
+            command += 'G'
 
         if voice:
-            command += ";"
+            command += ';'
         else:
-            back = "CONNECT"
+            back = 'CONNECT'
 
-        device.send(
+        self.device.send(
             command=command,
             back=back,
         )
 
-        return device.result()
+        return True
 
-    @staticmethod
-    def dial_from(device: Device, target: Union[str, int], memory="", voice=True) -> str:
+    def dial_from(self, target: Union[str, int], memory: str = None, voice=True) -> bool:
         """
         Originate call from specified memory or active memory
 
@@ -76,207 +74,213 @@ class V25TER:
         :param voice: Control whether to make a data call
         :param memory: The memory to pull number from. Leave empty to use active memory
         :param target: The target to call
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
-        :raises V25TERException: Poorly formatted command
+        :return: True if call is successful
+        :raises AssertionError: Memory type error
         """
 
         from py_sim7600._command_lists import memory_list
 
-        command = "ATD>"
-        back = "OK"
+        command = 'ATD>'
+        back = 'OK'
 
-        if memory == "":
+        if memory is None:
             # From active memory
             command += str(target)
-        elif memory in memory_list:
-            if type(target) == int:
-                command += memory + str(target)
-            else:
-                raise V25TERException("ATD with specified memory can't be used to call a named contact")
         else:
-            raise V25TERException("Memory type error")
+            assert memory in memory_list, 'Memory type error'
+
+            command += memory + str(target)
 
         if voice:
-            command += ";"
+            command += ';'
         else:
-            back = "CONNECT"
+            back = 'CONNECT'
 
-        device.send(
+        self.device.send(
             command=command,
             back=back,
         )
 
-        return device.result()
+        return True
 
-    @staticmethod
-    def answer(device: Device) -> str:
+    def answer(self) -> bool:
         """
         Call answer
 
         Corresponding command: ATA
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: True if answering call is successful
         :raises V25TERException: No incoming call
         """
 
-        device.send(
-            command="ATA",
-            back="OK",
+        result = self.device.send(
+            command='ATA',
+            back='OK',
         )
 
-        result = device.result()
-
-        if result == "NO CARRIER":
+        if 'NO CARRIER' in result:
             raise V25TERException("No incoming call or no reception")
 
-        return result
+        return True
 
-    @staticmethod
-    def disconnect(device: Device) -> str:
+    def disconnect(self) -> bool:
         """
         Disconnect existing call
 
         Corresponding command: ATH
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: True if call is disconnected
         """
 
         from py_sim7600.call_control import CallControl
 
-        CallControl.control_voice_hangup(
-            device=device,
-            mode="?"
-        )
+        call_controller = CallControl(self.device)
 
-        result = ""
+        try:
+            call_controller.control_voice_hangup(mode=0)
+        except Exception as e:
+            if not call_controller.check_control_voice_hangup():
+                raise e
 
-        if device.result() != "+CVHU: 0":
-            result += "Warning: CVHU is set to 1. Voice call may still be active. \n"
-
-        device.send(
+        self.device.send(
             command="ATH",
             back="OK"
         )
 
-        return result + device.result()
+        return True
 
-    @staticmethod
-    def auto_answer(device: Device, times: Union[int, str]) -> str:
+    def auto_answer(self, times: int) -> str:
         """
         Automatic answer incoming call
 
         Corresponding command: ATS0
 
-        :param times: Times to automatically answer the call. Set to 0 to disable it. Pass '?' to query current setting.
-        :param device: A SIM7600 device instance
+        :param times: Times of ring to auto answer. Set to 0 to disable auto answer.
         :return: Results from device return buffer
         :raises V25TERException: Auto answer time set to too long or too short
         """
 
-        command = "ATS0"
+        command = "ATS0="
 
-        if type(times) == str:
-            command += times
-        else:
-            if times > 255 or times < 0:
-                raise V25TERException("Auto answer times out of range")
+        if times > 255 or times < 0:
+            raise V25TERException("Auto answer times out of range")
 
-            command += "=" + times.zfill(3)
+        command += str(times).zfill(3)
 
-        device.send(
+        result = self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return result
 
-    @staticmethod
-    def switch_to_command(device: Device) -> str:
+    def check_auto_answer(self) -> int:
+        """
+        Check the auto answer configuration
+
+        Corresponding command: ATS0
+
+        :return: Results from device return buffer
+        :raises V25TERException: Auto answer time set to too long or too short
+        """
+
+        command = "ATS0?"
+
+        result = self.device.send(
+            command=command,
+            back="OK",
+        )
+
+        times = int(result[0:3])
+
+        return times
+
+    def switch_to_command(self) -> bool:
         """
         Switch from data mode to command mode
 
         Corresponding command: +++
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: True if switch is successful
         """
 
         time.sleep(1)
 
-        device.send(
+        self.device.send(
             command="+++",
             back="OK",
         )
 
-        return device.result()
+        return True
 
-    @staticmethod
-    def switch_to_data(device: Device) -> str:
+    def switch_to_data(self) -> bool:
         """
         Switch from command mode to data mode
 
         Corresponding command: ATO
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: True if switch is successful
         """
 
-        device.send(
+        self.device.send(
             command="ATO",
             back="CONNECT",
         )
 
-        return device.result()
+        return True
 
-    @staticmethod
-    def info(device: Device) -> str:
+    def info(self) -> str:
         """
         Display product identification information
 
         Corresponding command: ATI
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: Identification information
         """
 
-        device.send(
+        result = self.device.send(
             command="ATI",
             back="OK",
         )
 
-        return device.result()
+        return result
 
-    @staticmethod
-    def set_baud(device: Device, baud: Union[str, int]) -> str:
+    def set_baud(self, baud: int) -> bool:
         """
         Set local baud rate temporarily
 
         Corresponding command: AT+IPR
 
-        :param baud: The baud rate to set. Pass '?' = query current setting.
-        :param device: A SIM7600 device instance
+        :param baud: The baud rate to set.
         :return: Results from device return buffer
         """
 
-        command = "AT+IPR"
+        command = "AT+IPR=" + str(baud)
 
-        if type(baud) == str:
-            command += baud
-        else:
-            command += "=" + baud
-
-        device.send(
+        self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return True
 
-    @staticmethod
-    def set_control_character(device: Device, format_control: int, parity=-1, check=False) -> str:
+    def check_baud(self) -> int:
+        """
+        Check the current baud rate setting
+
+        Corresponding command: AT+IPR?
+
+        :return: The current baud rate setting
+        """
+
+        result = self.device.send(
+            command="AT+IPR?",
+            back="OK",
+        )
+
+        return int(result.split(":")[1])
+
+    def set_control_character(self, format_control: int, parity=-1, check=False) -> str:
         """
         Set control character framing
 
@@ -285,7 +289,6 @@ class V25TER:
         :param check: Set it to true to check current settings
         :param parity: Parity bit format
         :param format_control: Control format
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Parity code error
         """
@@ -307,15 +310,14 @@ class V25TER:
             else:
                 command += "=" + str(format_control)
 
-        device.send(
+        self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_data_flow(device: Device, dce: int, dte=0, check=False) -> str:
+    def set_data_flow(self, dce: int, dte=0, check=False) -> str:
         """
         Set local data flow control
 
@@ -324,7 +326,6 @@ class V25TER:
         :param check: Set it to true to check current settings
         :param dce: DCE value
         :param dte: DTE value
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Control value error
         """
@@ -338,22 +339,20 @@ class V25TER:
         else:
             command += "=" + str(dce) + "," + str(dte)
 
-        device.send(
+        self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_dcd_function(device: Device, dcd: int):
+    def set_dcd_function(self, dcd: int):
         """
         Set DCD function mode
 
         Corresponding command: AT&C
 
         :param dcd: The DCD setting to be set
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: DCD value error
         """
@@ -361,22 +360,20 @@ class V25TER:
         if dcd < 0 or dcd > 2:
             raise V25TERException("DCD value error")
 
-        device.send(
+        self.device.send(
             command="AT&C" + str(dcd),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def enable_command_echo(device: Device, enable: int):
+    def enable_command_echo(self, enable: int):
         """
         Enable command echo
 
         Corresponding command: ATE
 
         :param enable: Controls whether the command echo should be enabled
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Device echo value error
         """
@@ -384,40 +381,36 @@ class V25TER:
         if enable != 0 and enable != 1:
             raise V25TERException("Device echo value error")
 
-        device.send(
+        self.device.send(
             command="ATE" + str(enable),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def current_config(device: Device):
+    def current_config(self):
         """
         Display current configuration
 
         Corresponding command: AT&V
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT&V",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_dtr(device: Device, dtr: int):
+    def set_dtr(self, dtr: int):
         """
         Set DTR function mode
 
         Corresponding command: AT&D
 
         :param dtr: The mode to set DTR PIN function behaviour
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: DTR Mode value error
         """
@@ -425,22 +418,20 @@ class V25TER:
         if dtr < 0 or dtr > 2:
             raise V25TERException("DTR Mode value error")
 
-        device.send(
+        self.device.send(
             command="AT&D" + str(dtr),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_dsr(device: Device, dsr: int):
+    def set_dsr(self, dsr: int):
         """
         Set DSR function mode
 
         Corresponding command: AT&S
 
         :param dsr: The mode to set DSR display
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: DSR display mode value error
         """
@@ -448,22 +439,20 @@ class V25TER:
         if dsr != 0 and dsr != 1:
             raise V25TERException("DSR display mode value error")
 
-        device.send(
+        self.device.send(
             command="AT&S" + str(dsr),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_result_format(device: Device, r_format: int):
+    def set_result_format(self, r_format: int):
         """
         Set result code format mode
 
         Corresponding command: ATV
 
         :param r_format: The format to set the result output
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Result format display mode value error
         """
@@ -471,22 +460,20 @@ class V25TER:
         if r_format != 0 and r_format != 1:
             raise V25TERException("Result format display mode value error")
 
-        device.send(
+        self.device.send(
             command="ATV" + str(r_format),
             back="",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def reset_config(device: Device, temporary=False):
+    def reset_config(self, temporary=False):
         """
         Set all current parameters to manufacturer defaults
 
         Corresponding command: AT&F
 
         :param temporary: Set some temporary TA parameters to manufacturer defaults
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
@@ -495,22 +482,20 @@ class V25TER:
         if temporary:
             command += "0"
 
-        device.send(
+        self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_result_presentation(device: Device, dce=0):
+    def set_result_presentation(self, dce=0):
         """
         Set Result Code Presentation Mode
 
         Corresponding command: ATQ
 
         :param dce: Set whether DCE return code is transmitted
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Result format display mode value error
         """
@@ -518,22 +503,20 @@ class V25TER:
         if dce != 0 and dce != 1:
             raise V25TERException("Result format display mode value error")
 
-        device.send(
+        self.device.send(
             command="ATQ" + str(dce),
             back="",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_connect_format(device: Device, mode=1):
+    def set_connect_format(self, mode=1):
         """
         Set CONNECT Result Code Format
 
         Corresponding command: ATX
 
         :param mode: Set whether CONNECT is returned
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Connect mode value error
         """
@@ -541,22 +524,20 @@ class V25TER:
         if mode < 0 or mode > 4:
             raise V25TERException("Connect mode value error")
 
-        device.send(
+        self.device.send(
             command="ATX" + str(mode),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_connect_protocol(device: Device, report=0):
+    def set_connect_protocol(self, report=0):
         """
         Set CONNECT Result Code Format About Protocol
 
         Corresponding command: AT\\V
 
         :param report: Set whether to report communication protocol
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Report mode value error
         """
@@ -564,22 +545,20 @@ class V25TER:
         if report != 0 and report != 1:
             raise V25TERException("Report mode value error")
 
-        device.send(
+        self.device.send(
             command="AT\\V" + str(report),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_connect_speed(device: Device, speed=1):
+    def set_connect_speed(self, speed=1):
         """
         Set CONNECT Result Code Format About Speed
 
         Corresponding command: AT&E
 
         :param speed: The speed to set
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises V25TERException: Speed mode value error
         """
@@ -587,131 +566,117 @@ class V25TER:
         if speed != 0 and speed != 1:
             raise V25TERException("Speed mode value error")
 
-        device.send(
+        self.device.send(
             command="AT&E" + str(speed),
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def save_config(device: Device):
+    def save_config(self):
         """
         Save the user setting to ME
 
         Corresponding command: AT&W
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT&W",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def restore_config(device: Device):
+    def restore_config(self):
         """
         Restore the user setting from ME
 
         Corresponding command: ATZ
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="ATZ",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_manufacturer(device: Device):
+    def get_manufacturer(self):
         """
         Request manufacturer identification
 
         Corresponding command: AT+CGMI
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+CGMI",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_model(device: Device):
+    def get_model(self):
         """
         Request model identification
 
         Corresponding command: AT+CGMM
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+CGMM",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_revision(device: Device):
+    def get_revision(self):
         """
         Request revision identification
 
         Corresponding command: AT+CGMR
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+CGMR",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_serial(device: Device):
+    def get_serial(self):
         """
         Request product serial number identification
 
         Corresponding command: AT+CGSN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+CGSN",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def set_te(device: Device, set: str, check=False):
+    def set_te(self, char_set: str, check=False):
         """
         Select TE character set
 
         Corresponding command: AT+CSCS
 
         :param check: Set whether to check the current setting
-        :param set: The character set to use
-        :param device: A SIM7600 device instance
+        :param char_set: The character set to use
         :return: Results from device return buffer
         :raises V25TERException: Character set parameter error
         """
@@ -720,68 +685,62 @@ class V25TER:
 
         if check:
             command += "?"
-        elif set == "IRA" or set == "GSM" or set == "UCS2":
-            command += '="' + set
+        elif char_set == "IRA" or char_set == "GSM" or char_set == "UCS2":
+            command += '="' + char_set
         else:
             raise V25TERException("Character set parameter error")
 
-        device.send(
+        self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_international_subscriber(device: Device):
+    def get_international_subscriber(self):
         """
         Request international mobile subscriber identity
 
         Corresponding command: AT+CIMI
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+CIMI",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_another_subscriber(device: Device):
+    def get_another_subscriber(self):
         """
         Request another international mobile subscriber identity
 
         Corresponding command: AT+CIMIM
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+CIMIM",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_capabilities(device: Device):
+    def get_capabilities(self):
         """
         Request overall capabilities
 
         Corresponding command: AT+GCAP
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
 
-        device.send(
+        self.device.send(
             command="AT+GCAP",
             back="OK",
         )
 
-        return device.result()
+        return self.device.result()

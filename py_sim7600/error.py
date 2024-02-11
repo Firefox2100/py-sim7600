@@ -86,6 +86,7 @@ class PhonebookException(Exception):
             print("Error:")
             print(errors)
 
+
 class SIMApplicationToolkitException(Exception):
     """
     Exception raised by phonebook commands
@@ -98,6 +99,7 @@ class SIMApplicationToolkitException(Exception):
             self.errors = errors
             print("Error:")
             print(errors)
+
 
 class GPRSException(Exception):
     """

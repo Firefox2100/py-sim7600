@@ -12,35 +12,51 @@ class CallControl:
     AT Commands for Call Control
     """
 
-    @staticmethod
-    def control_voice_hangup(device: Device, mode: int, check=False) -> str:
+    def __init__(self, device: Device):
+        self.device = device
+
+    def control_voice_hangup(self, mode: int) -> bool:
         """
         Voice hang up control
 
         Corresponding command: AT+CVHU
 
-        :param check: Set to true to get current settings
         :param mode: The mode to set voice hang up to
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: True if successful
         :raises CallControlException: Mode parameter need to be 0 or 1
         """
 
         command = "AT+CVHU"
 
-        if check:
-            command += "?"
-        elif mode != 0 and mode != 1:
+        if mode != 0 and mode != 1:
             raise CallControlException("Mode setting error")
         else:
             command += "=" + str(mode)
 
-        device.send(
+        self.device.send(
             command=command,
             back="OK",
         )
 
-        return device.result()
+        return True
+
+    def check_control_voice_hangup(self) -> bool:
+        """
+        Check voice hang up control
+
+        Corresponding command: AT+CVHU
+
+        :return: True if ATH or “drop DTR” shall cause a voice connection to be disconnected
+        """
+
+        command = "AT+CVHU?"
+
+        result = self.device.send(
+            command=command,
+            back="OK",
+        )
+
+        return "1" in result
 
     @staticmethod
     def hang_up(device: Device) -> str:

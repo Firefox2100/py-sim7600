@@ -13,8 +13,10 @@ class StatusControl:
     AT Commands for Status Control
     """
 
-    @staticmethod
-    def set_function(device: Device, function: int, reset: bool) -> str:
+    def __init__(self, device: Device):
+        self.device = device
+
+    def set_function(self, function: int, reset: bool) -> str:
         """
         Set phone functionality
 
@@ -22,19 +24,18 @@ class StatusControl:
 
         :param reset: Controls whether to reset the memory
         :param function: The function level to set the modem into
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises StatusControlException: Reset or restart required
         """
 
         command = "AT+CFUN"
 
-        device.send(
+        self.device.send(
             command="AT+CFUN?",
             back="OK"
         )
 
-        status = device.result()
+        status = self.device.result()
 
         if function != 7 and function != 6 and "7" in status:
             # Restart required
@@ -45,15 +46,14 @@ class StatusControl:
         if reset:
             command += ",1"
 
-        device.send(
+        self.device.send(
             command=command,
             back="OK"
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def enter_pin(device: Device, pin: str, puk="") -> str:
+    def enter_pin(self, pin: str, puk="") -> str:
         """
         Enter PIN
 
@@ -64,19 +64,18 @@ class StatusControl:
 
         :param puk: The current PUK (temporary PIN), if applicable
         :param pin: The PIN of the SIM card. If PUK is present, this is the new PIN to set.
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises StatusControlException: PUK required
         """
         
         command = "AT+CPIN"
 
-        device.send(
+        self.device.send(
             command="AT+CPIN?",
             back="OK"
         )
 
-        if "PUK" in device.result():
+        if "PUK" in self.device.result():
             if puk == "":
                 raise StatusControlException("PUK required")
             else:
@@ -84,85 +83,97 @@ class StatusControl:
         else:
             command += "=" + pin
         
-        device.send(
+        self.device.send(
             command=command,
             back="OK"
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def get_iccid(device: Device) -> str:
+    def get_iccid(self) -> str:
         """
         Read ICCID from SIM card
 
         Corresponding command: AT+CICCID
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         """
         
-        device.send(
+        self.device.send(
             command="AT+CICCID",
             back="OK"
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def sim_access_general(device: Device, length: int, command: str) -> str:
+    def sim_access_general(self, command: str) -> str:
         """
         Generic SIM access
 
         Corresponding command: AT+CSIM
 
-        :param command: The command to be sent
-        :param length: The length of the command to be sent
-        :param device: A SIM7600 device instance
+        :param command: Command passed from MT to SIM card
         :return: Results from device return buffer
         """
 
         # TODO: Add a more detailed check to SIM-ME commands.
 
-        device.send(
+        length = len(command)
+
+        self.device.send(
             command="AT+CSIM=" + str(length) + "," + command,
             back="OK"
         )
 
-        return device.result()
+        return self.device.result()
 
-    @staticmethod
-    def sim_access_restricted(device: Device, command: int, file_id: int, p1: int, p2: int, p3: int, data: str) -> str:
+    def sim_access_restricted(self,
+                              command: int,
+                              file_id: int = None,
+                              p1: int = None,
+                              p2: int = None,
+                              p3: int = None,
+                              data: str = None,
+                              ) -> str:
         """
         Restricted SIM access
 
         Corresponding command: AT+CRSM
 
-        :param device: A SIM7600 device instance
+        :param command: Command passed on by the MT to the SIM
+        :param file_id: Identifier for an elementary data file on SIM, if used by the command
+        :param p1: First parameter for the command
+        :param p2: Second parameter for the command
+        :param p3: Third parameter for the command
+        :param data: Data to be written to the SIM
         :return: Results from device return buffer
         """
 
-        # TODO: Add a more detailed check to this command
+        from py_sim7600._command_lists import restricted_sim_command, restricted_sim_file_id
+
+        assert command in restricted_sim_command.keys(), "Illegal Command"
 
         command_out = "AT+CRSM=" + str(command)
 
-        if file_id != None:
+        if file_id is not None:
+            assert file_id in restricted_sim_file_id.keys(), "Illegal File ID"
+
             command_out += "," + str(file_id)
-        if p1 != None:
+        if p1 is not None:
             command_out += "," + str(p1)
-        if p2 != None:
+        if p2 is not None:
             command_out += "," + str(p2)
-        if p3 != None:
+        if p3 is not None:
             command_out += "," + str(p3)
-        if data != None:
+        if data is not None:
             command_out += ',"' + str(data) + '"'
 
-        device.send(
+        self.device.send(
             command=command_out,
             back="OK"
         )
 
-        return device.result()
+        return self.device.result()
 
     @staticmethod
     def pin_times(device: Device) -> str:
@@ -494,7 +505,7 @@ class StatusControl:
         if code != 0 and code != 1 and code != 2:
             raise StatusControlException("Error level parameter error")
 
-        command = 'AT+CCLK=' + code
+        command = 'AT+CCLK=' + str(code)
 
         device.send(
             command=command,
