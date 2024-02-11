@@ -1,5 +1,7 @@
 """
-This file contains classes related to V.25TER commands. This file may raise V25TERException,
+This file contains classes related to V.25TER commands.
+
+This file may raise V25TERException,
 remember to capture accordingly.
 """
 

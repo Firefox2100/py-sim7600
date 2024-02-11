@@ -30,7 +30,6 @@ class TestDevice:
         assert device._Device__is_rpi == False
         assert device._Device__power_key == 6
         assert device._Device__is_on == True
-        assert device._Device__buffer == ''
 
         assert isinstance(device._Device__serial, MockSerial)
 
@@ -52,33 +51,13 @@ class TestDevice:
 
         assert not mock_device._Device__serial._is_open
 
-    def test_send_without_result(self, mock_device):
-        mock_device.open()
-        mock_device._Device__serial.add_response({
-            'input': b'AT\r\n',
-            'output': b'OK\r\n',
-        })
-
-        mock_device.send_without_result('AT', timeout=0)
-
-        assert mock_device._Device__serial._output_buffer == b'AT\r\n'
-        assert mock_device._Device__serial._input_buffer == b''
-        assert mock_device._Device__buffer == 'OK\r\n'
-
-    def test_result(self, mock_device):
-        mock_device._Device__buffer = 'OK\r\n'
-
-        result = mock_device.result()
-
-        assert result == 'OK\r\n'
-
     def test_send(self, mock_device):
         mock_device.open()
         mock_device._Device__serial.add_response({
-            'input': b'AT\r\n',
-            'output': b'OK\r\n',
+            'input': b'AT\r',
+            'output': b'\r\nOK\r\n',
         })
 
-        result = mock_device.send('AT', timeout=0)
+        result = mock_device.send('AT')
 
-        assert result == 'OK\r\n'
+        assert result == 'OK'

@@ -33,7 +33,6 @@ class Device:
         self.__serial.reset_input_buffer()
         self.__power_key = 6
         self.__is_on = not self.__is_rpi
-        self.__buffer = ''
 
     def open(self):
         """
@@ -56,19 +55,6 @@ class Device:
         """
 
         self.__serial.close()
-
-    def result(self) -> str:
-        """
-        Fetch the result from the buffer
-
-        :return: Results
-        :rtype: str
-        """
-
-        temp = self.__buffer
-        self.__buffer = ''
-
-        return temp
 
     def power_on(self):
         """
@@ -111,14 +97,43 @@ class Device:
         else:
             raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
-    def send_without_result(self, command: str, back: str = None, timeout=5) -> bool:
+    def read_full_response(self, timeout=5, pattern='\r\n') -> str:
+        """
+        Read the full response from the device.
+
+        SIM7600 responses are in the format of <CR><LF>...<CR><LF>,
+        so this function looks for a starting and ending pattern to
+        determine when the response is complete.
+        """
+
+        start_time = time.time()
+        accumulated_data = ''
+        response_started = False
+
+        time.sleep(0.1)
+
+        # while True:
+        while time.time() - start_time < timeout:
+            if self.__serial.in_waiting > 0:
+                accumulated_data += self.__serial.read(self.__serial.in_waiting).decode()
+                if pattern in accumulated_data:
+                    response_started = True
+                if response_started and accumulated_data.endswith(pattern) and accumulated_data != pattern:
+                    # Strip the beginning and ending pattern
+                    return accumulated_data[len(pattern):-len(pattern)]
+
+            time.sleep(0.01)
+
+        raise DeviceException("Device read timeout")
+
+    def send(self, command: str, back: str = None, timeout=5) -> str:
         """
         Send a command to the device, without expecting a result
 
         :param command: Raw command to send to the string
         :param back: String expected to be in the successful result
         :param timeout: Optional. Timeout time in seconds
-        :return: True if successful
+        :return: The result string returned by the device
         :rtype: bool
         :raises DeviceException: If the device is off or the command fails
         """
@@ -126,32 +141,13 @@ class Device:
         if not self.__is_on:
             raise DeviceException("Device not on")
 
-        self.__serial.write((command + "\r\n").encode())
-        time.sleep(timeout)
-        if self.__serial.in_waiting > 0:
-            time.sleep(0.01)
-            self.__buffer = self.__serial.read(self.__serial.in_waiting).decode()
-        if self.__buffer != '':
-            if back is not None and back not in self.__buffer:
-                raise DeviceException("Execution failed", self.__buffer)
+        self.__serial.write((command + "\r").encode())
+        response = self.read_full_response(timeout)
+
+        if response is not None:
+            if back is not None and back not in response:
+                raise DeviceException("Execution failed", response)
             else:
-                return True
+                return response
         else:
-            raise DeviceException("Device timed out")
-
-    def send(self, command: str, back: str = None, timeout=5) -> str:
-        """
-        Send a command to the device
-
-        :param command: Raw command to send to the string
-        :param back: String expected to be in the successful result
-        :param timeout: Optional. Timeout time in seconds
-        :return: Result string returned by the device
-        :rtype: str
-        """
-
-        self.send_without_result(command, back, timeout)
-
-        time.sleep(0.01)
-
-        return self.result()
+            raise DeviceException("Device returned no response")
