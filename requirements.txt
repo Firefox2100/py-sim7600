@@ -37,3 +37,8 @@ sphinx_rtd_theme==2.0.0
 typing_extensions==4.9.0
 urllib3==2.2.0
 watchdog==4.0.0
+
+# Test dependencies
+pytest==8.0.0
+pytest-cov==4.1.0
+coverage==7.4.1
