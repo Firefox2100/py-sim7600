@@ -5,6 +5,7 @@ remember to capture accordingly.
 
 import serial
 import time
+import re
 from py_sim7600.exceptions import DeviceException
 
 # Attempt to import RPI.GPIO
@@ -97,7 +98,7 @@ class Device:
         else:
             raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
-    def read_full_response(self, timeout=5, pattern='\r\n') -> str:
+    def read_full_response(self, timeout=5, pattern='\r\n') -> str | None:
         """
         Read the full response from the device.
 
@@ -119,8 +120,23 @@ class Device:
                 if pattern in accumulated_data:
                     response_started = True
                 if response_started and accumulated_data.endswith(pattern) and accumulated_data != pattern:
-                    # Strip the beginning and ending pattern
-                    return accumulated_data[len(pattern):-len(pattern)]
+                    # The response may contain the pattern in the middle, wait a bit more
+                    current_length = len(accumulated_data)
+                    time.sleep(0.1)
+                    accumulated_data += self.__serial.read(self.__serial.in_waiting).decode()
+
+                    if len(accumulated_data) == current_length:
+                        # Strip the beginning and ending pattern
+                        escaped_pattern = re.escape(pattern)
+                        re_pattern = re.compile(f'{escaped_pattern}(.*){escaped_pattern}', re.DOTALL)
+                        match = re.search(re_pattern, accumulated_data)
+
+                        if match:
+                            return match.group(1)
+                        else:
+                            return None
+                    else:
+                        continue
 
             time.sleep(0.01)
 
