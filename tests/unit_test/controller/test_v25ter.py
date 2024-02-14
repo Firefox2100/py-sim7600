@@ -7,7 +7,7 @@ from py_sim7600.controller.v25ter import V25TERController, V25TERException
 
 
 @pytest.fixture
-def mock_controller(mock_sim7600_device, request) -> V25TERController:
+def mock_v25ter_controller(mock_sim7600_device, request) -> V25TERController:
     controller = V25TERController(
         device=mock_sim7600_device,
     )
@@ -26,94 +26,94 @@ def mock_controller(mock_sim7600_device, request) -> V25TERController:
 
 
 class TestV25TERController:
-    @pytest.mark.parametrize('mock_controller', [(b'A/\r', b'\r\nOK\r\n')], indirect=True)
-    def test_re_issue(self, mock_controller):
-        result = mock_controller.re_issue()
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'A/\r', b'\r\nOK\r\n')], indirect=True)
+    def test_re_issue(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.re_issue()
 
         assert result == 'OK'
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATD1234567890;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD1234567890;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)
-    def test_dial(self, mock_controller):
-        result = mock_controller.dial(
+    def test_dial(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.dial(
             number='1234567890',
         )
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATD>SM3;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD>SM3;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)
-    def test_dial_from(self, mock_controller):
-        result = mock_controller.dial_from(
+    def test_dial_from(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.dial_from(
             target=3,
             memory='SM',
         )
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATD>2;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD>2;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)
-    def test_dial_from_active_memory(self, mock_controller):
-        result = mock_controller.dial_from(
+    def test_dial_from_active_memory(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.dial_from(
             target=2,
         )
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATD>"Bob";\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD>"Bob";\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)
-    def test_dial_from_entry_name(self, mock_controller):
-        result = mock_controller.dial_from(
+    def test_dial_from_entry_name(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.dial_from(
             target='Bob',
         )
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATA\r', b'\r\nVOICE CALL: BEGIN\r\nOK\r\n')], indirect=True)
-    def test_answer(self, mock_controller):
-        result = mock_controller.answer()
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATA\r', b'\r\nVOICE CALL: BEGIN\r\nOK\r\n')], indirect=True)
+    def test_answer(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.answer()
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATA\r', b'\r\nNO CARRIER\r\n')], indirect=True)
-    def test_answer_no_call(self, mock_controller):
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATA\r', b'\r\nNO CARRIER\r\n')], indirect=True)
+    def test_answer_no_call(self, mock_v25ter_controller):
         with pytest.raises(V25TERException):
-            mock_controller.answer()
+            mock_v25ter_controller.answer()
 
-    # @pytest.mark.parametrize('mock_controller', [(b'ATH\r', b'\r\nVOICE CALL: END: 001122\r\nOK\r\n')], indirect=True)
-    # def test_disconnect(self, mock_controller):
-    #     result = mock_controller.disconnect()
+    # @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATH\r', b'\r\nVOICE CALL: END: 001122\r\nOK\r\n')], indirect=True)
+    # def test_disconnect(self, mock_v25ter_controller):
+    #     result = mock_v25ter_controller.disconnect()
     #
     #     assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATS0=003\r', b'\r\nOK\r\n')], indirect=True)
-    def test_auto_answer(self, mock_controller):
-        result = mock_controller.auto_answer(
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATS0=003\r', b'\r\nOK\r\n')], indirect=True)
+    def test_auto_answer(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.set_auto_answer(
             times=3,
         )
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATS0?\r', b'\r\n003\r\nOK\r\n')], indirect=True)
-    def test_check_auto_answer(self, mock_controller):
-        result = mock_controller.check_auto_answer()
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATS0?\r', b'\r\n003\r\nOK\r\n')], indirect=True)
+    def test_check_auto_answer(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.check_auto_answer()
 
         assert result == 3
 
-    @pytest.mark.parametrize('mock_controller', [(b'+++\r', b'\r\nOK\r\n')], indirect=True)
-    def test_switch_to_command(self, mock_controller):
-        result = mock_controller.switch_to_command()
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'+++\r', b'\r\nOK\r\n')], indirect=True)
+    def test_switch_to_command(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.switch_to_command()
 
         assert result
 
-    @pytest.mark.parametrize('mock_controller', [(b'ATO\r', b'\r\nCONNECT 115200\r\n')], indirect=True)
-    def test_switch_to_data(self, mock_controller):
-        result = mock_controller.switch_to_data()
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATO\r', b'\r\nCONNECT 115200\r\n')], indirect=True)
+    def test_switch_to_data(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.switch_to_data()
 
         assert result
 
-    def test_info(self, mock_controller):
-        result = mock_controller.info()
+    def test_info(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.info()
 
         assert_equal(result, {
             'manufacturer': 'SIMCOM INCORPORATED',

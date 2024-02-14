@@ -146,12 +146,12 @@ class V25TERController(controller.DeviceController):
         :rtype: bool
         """
 
-        from controller.call_control import CallControl
+        from .call_control import CallController
 
-        call_controller = CallControl(self.device)
+        call_controller = CallController(self.device)
 
         try:
-            call_controller.control_voice_hangup(mode=0)
+            call_controller.set_control_voice_hangup(disconnect_ath=True)
         except Exception as e:
             if not call_controller.check_control_voice_hangup():
                 raise e
@@ -163,7 +163,7 @@ class V25TERController(controller.DeviceController):
 
         return True
 
-    def auto_answer(self, times: int) -> bool:
+    def set_auto_answer(self, times: int) -> bool:
         """
         Automatic answer incoming call
 

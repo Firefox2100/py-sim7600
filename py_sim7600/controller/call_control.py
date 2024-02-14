@@ -3,35 +3,36 @@ This file contains classes related to GPRS commands. This file may raise CallCon
 remember to capture accordingly.
 """
 
-from py_sim7600.device import Device
+import re
+
+from py_sim7600.controller import DeviceController
 from py_sim7600.exceptions import CallControlException
+from py_sim7600.model.enums import BearerServiceSpeed, BearerServiceName, BearerServiceConnectionElement
 
 
-class CallControl:
+class CallController(DeviceController):
     """
     AT Commands for Call Control
     """
 
-    def __init__(self, device: Device):
-        self.device = device
-
-    def control_voice_hangup(self, mode: int) -> bool:
+    def set_control_voice_hangup(self, disconnect_ath: bool) -> bool:
         """
         Voice hang up control
 
         Corresponding command: AT+CVHU
 
-        :param mode: The mode to set voice hang up to
+        :param disconnect_ath: ATH or “drop DTR” shall cause a voice connection to be disconnected
         :return: True if successful
+        :rtype: bool
         :raises CallControlException: Mode parameter need to be 0 or 1
         """
 
-        command = "AT+CVHU"
+        command = 'AT+CVHU='
 
-        if mode != 0 and mode != 1:
-            raise CallControlException("Mode setting error")
+        if disconnect_ath:
+            command += '0'
         else:
-            command += "=" + str(mode)
+            command += '1'
 
         self.device.send(
             command=command,
@@ -47,597 +48,636 @@ class CallControl:
         Corresponding command: AT+CVHU
 
         :return: True if ATH or “drop DTR” shall cause a voice connection to be disconnected
+        :rtype: bool
         """
 
-        command = "AT+CVHU?"
+        command = 'AT+CVHU?'
 
         result = self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
-        return "1" in result
+        return '0' in result
 
-    @staticmethod
-    def hang_up(device: Device) -> str:
+    def hang_up(self) -> bool:
         """
         Hang up call
 
         Corresponding command: AT+CHUP
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
-        :raises CallControlException:
+        :return: True if successful
+        :rtype: bool
         """
-        raise NotImplementedError
 
-    @staticmethod
-    def bearer_type(device: Device) -> str:
+        command = 'AT+CHUP'
+
+        self.device.send(
+            command=command,
+            back='OK',
+        )
+
+        return True
+
+    def set_bearer_type(self,
+                        bearer_speed: BearerServiceSpeed,
+                        bearer_name: BearerServiceName,
+                        bearer_ce: BearerServiceConnectionElement,
+                        ) -> bool:
         """
         Select bearer service type
 
         Corresponding command: AT+CBST
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
-        :raises CallControlException:
+        :param bearer_speed: The speed for bearer service in a data call
+        :param bearer_name: The type of bearer service in a data call
+        :param bearer_ce: The connection element for bearer service in a data call
+        :return: True if successful
+        :rtype: bool
+        :raises CallControlException: Bearer name and connection element setting error
         """
-        raise NotImplementedError
 
-    @staticmethod
-    def radio_link(device: Device) -> str:
+        command = 'AT+CBST='
+
+        if bearer_speed == BearerServiceSpeed.BIT_TRANSPARENT or bearer_speed == BearerServiceSpeed.MULTIMEDIA:
+            # For bit-transparent and multimedia, bearer_name and bearer_ce are fixed
+            if bearer_name != BearerServiceName.SYNC_MODEM or bearer_ce != BearerServiceConnectionElement.TRANSPARENT:
+                raise CallControlException('Bearer name and connection element setting error')
+
+        command += f'{bearer_speed.value},{bearer_name.value},{bearer_ce.value}'
+
+        self.device.send(
+            command=command,
+            back='OK',
+        )
+
+        return True
+
+    def check_bearer_type(self) -> tuple[BearerServiceSpeed, BearerServiceName, BearerServiceConnectionElement]:
+        """
+        Read selected bearer service type
+
+        Corresponding command: AT+CBST
+
+        :return: The speed for bearer service in a data call, the type of bearer service in a data call,
+                 and the connection element for bearer service in a data call as a tuple
+        :rtype: tuple[BearerServiceSpeed, BearerServiceName, BearerServiceConnectionElement]
+        """
+
+        command = 'AT+CBST?'
+
+        result = self.device.send(
+            command=command,
+            back='OK',
+        )
+
+        pattern = r'\+CBST: (\d+),(\d+),(\d+)'
+
+        match = re.search(pattern, result)
+
+        if match:
+            return (
+                BearerServiceSpeed(int(match.group(1))),
+                BearerServiceName(int(match.group(2))),
+                BearerServiceConnectionElement(int(match.group(3))),
+            )
+
+    def set_rlp_parameter(self,
+                          rlp_version: int = 1,
+                          iws: int = None,
+                          mws: int = None,
+                          ack_timer: int = None,
+                          retry_times: int = None,
+                          re_sequence_timer: int = None,
+                          ) -> bool:
         """
         Radio link protocol
 
         Corresponding command: AT+CRLP
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :param rlp_version: RLP version number in integer format, and it can be 0, 1 or 2
+        :param iws: IWF to MS window size
+        :param mws: MS to IWF window size
+        :param ack_timer: Acknowledgement timer, in 10ms unit
+        :param retry_times: Maximum number of retransmissions
+        :param re_sequence_timer: Re-sequencing timer, in 10ms unit
+        :return: True if setting successful
+        :rtype: bool
         :raises CallControlException:
         """
-        raise NotImplementedError
 
-    @staticmethod
-    def service_report(device: Device) -> str:
+        if rlp_version not in [0, 1, 2]:
+            raise CallControlException('RLP version number need to be 0, 1 or 2')
+
+        command = 'AT+CRLP='
+
+        if iws is not None:
+            command += f'{iws}'
+            if mws is not None:
+                command += f',{mws}'
+                if ack_timer is not None:
+                    command += f',{ack_timer}'
+                    if retry_times is not None:
+                        command += f',{retry_times}'
+                        if re_sequence_timer is not None:
+                            command += f',{rlp_version},{re_sequence_timer}'
+
+        self.device.send(
+            command=command,
+            back='OK',
+        )
+
+        return True
+
+    def check_rlp_parameter(self) -> tuple[int, int, int, int, int, int]:
+        """
+        Read RLP parameter
+
+        Corresponding command: AT+CRLP
+
+        :return: RLP version number, IWF to MS window size, MS to IWF window size, Acknowledgement timer,
+                 Maximum number of retransmissions, and Re-sequencing timer as a tuple
+        :rtype: tuple[int, int, int, int, int, int]
+        """
+
+        command = 'AT+CRLP?'
+
+        result = self.device.send(
+            command=command,
+            back='OK',
+        )
+
+        pattern = r'\+CRLP: (\d+),(\d+),(\d+),(\d+),(\d+),(\d+)'
+
+        match = re.search(pattern, result)
+
+        if match:
+            return (
+                int(match.group(1)),
+                int(match.group(2)),
+                int(match.group(3)),
+                int(match.group(4)),
+                int(match.group(5)),
+                int(match.group(6)),
+            )
+
+    def service_report(self) -> str:
         """
         Service reporting control
 
         Corresponding command: AT+CR
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def result_code(device: Device) -> str:
+    def result_code(self) -> str:
         """
         Cellular result codes
 
         Corresponding command: AT+CRC
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def list_call(device: Device) -> str:
+    def list_call(self) -> str:
         """
         List current calls
 
         Corresponding command: AT+CLCC
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def extended_error(device: Device) -> str:
+    def extended_error(self) -> str:
         """
         Extended error report
 
         Corresponding command: AT+CEER
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def call_waiting(device: Device) -> str:
+    def call_waiting(self) -> str:
         """
         Call waiting
 
         Corresponding command: AT+CCWA
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def supplementary(device: Device) -> str:
+    def supplementary(self) -> str:
         """
         Call related supplementary services
 
         Corresponding command: AT+CHLD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def forward_control(device: Device) -> str:
+    def forward_control(self) -> str:
         """
         Call forwarding number and conditions
 
         Corresponding command: AT+CCFC
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def calling_presentation(device: Device) -> str:
+    def calling_presentation(self) -> str:
         """
         Calling line identification presentation
 
         Corresponding command: AT+CLIP
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def calling_restriction(device: Device) -> str:
+    def calling_restriction(self) -> str:
         """
         Calling line identification restriction
 
         Corresponding command: AT+CLIR
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def connected_presentation(device: Device) -> str:
+    def connected_presentation(self) -> str:
         """
         Connected line identification presentation
 
         Corresponding command: AT+COLP
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def tone_generate(device: Device) -> str:
+    def tone_generate(self) -> str:
         """
         DTMF and tone generation
 
         Corresponding command: AT+VTS
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def tone_duration(device: Device) -> str:
+    def tone_duration(self) -> str:
         """
         Tone duration
 
         Corresponding command: AT+VTD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def address_select(device: Device) -> str:
+    def address_select(self) -> str:
         """
         Select type of address
 
         Corresponding command: AT+CSTA
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def call_mode(device: Device) -> str:
+    def call_mode(self) -> str:
         """
         Call mode
 
         Corresponding command: AT+CMOD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mute_speaker(device: Device) -> str:
+    def mute_speaker(self) -> str:
         """
         Speaker mute control
 
         Corresponding command: AT+VMUTE
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mute_microphone(device: Device) -> str:
+    def mute_microphone(self) -> str:
         """
         Microphone mute control
 
         Corresponding command: AT+CMUT
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mo_ring_urc_config(device: Device) -> str:
+    def mo_ring_urc_config(self) -> str:
         """
         Enable or disable report MO ring URC
 
         Corresponding command: AT+MORING
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def speaker_volume(device: Device) -> str:
+    def speaker_volume(self) -> str:
         """
         Loudspeaker volume level
 
         Corresponding command: AT+CLVL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def set_sidetone(device: Device) -> str:
+    def set_sidetone(self) -> str:
         """
         Set sidetone
 
         Corresponding command: AT+SIDET
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def change_acdb(device: Device) -> str:
+    def change_acdb(self) -> str:
         """
         Change default ACDB filename
 
         Corresponding command: AT+CACDBFN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def usb_audio(device: Device) -> str:
+    def usb_audio(self) -> str:
         """
         USB audio control
 
         Corresponding command: AT+CPCMREG
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mic_gain(device: Device) -> str:
+    def mic_gain(self) -> str:
         """
         Adjust mic gain
 
         Corresponding command: AT+CMICGAIN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def out_gain(device: Device) -> str:
+    def out_gain(self) -> str:
         """
         Adjust out gain
 
         Corresponding command: AT+COUTGAIN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def tx_volume(device: Device) -> str:
+    def tx_volume(self) -> str:
         """
         Adjust TX voice mic volume
 
         Corresponding command: AT+CTXVOL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def tx_gain(device: Device) -> str:
+    def tx_gain(self) -> str:
         """
         Adjust TX voice mic gain
 
         Corresponding command: AT+CTXMICGAIN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def rx_volume(device: Device) -> str:
+    def rx_volume(self) -> str:
         """
         Adjust RX voice output speaker volume
 
         Corresponding command: AT+CRXVOL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def farend_echo(device: Device) -> str:
+    def farend_echo(self) -> str:
         """
         Inhibit far-end echo
 
         Corresponding command: AT+CECH
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def doubletalk_echo(device: Device) -> str:
+    def doubletalk_echo(self) -> str:
         """
         Inhibit echo during doubletalk
 
         Corresponding command: AT+CECDT
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mic_noise_estimation(device: Device) -> str:
+    def mic_noise_estimation(self) -> str:
         """
         MIC NOISE suppression
 
         Corresponding command: AT+CNSN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mic_noise_maximum(device: Device) -> str:
+    def mic_noise_maximum(self) -> str:
         """
         MIC NOISE suppression
 
         Corresponding command: AT+CNSLIM
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def fns_mode(device: Device) -> str:
+    def fns_mode(self) -> str:
         """
         Adjust parameter fnsMode of RX_VOICE_FNS
 
         Corresponding command: AT+CFNSMOD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def fns_input_gain(device: Device) -> str:
+    def fns_input_gain(self) -> str:
         """
         Adjust parameter fnsInputGain of RX_VOICE_FNS
 
         Corresponding command: AT+CFNSIN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def fns_target_ns(device: Device) -> str:
+    def fns_target_ns(self) -> str:
         """
         Adjust parameter fnsTargetNS of RX_VOICE_FNS
 
         Corresponding command: AT+CFNSLVL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def voice_mod_enable(device: Device) -> str:
+    def voice_mod_enable(self) -> str:
         """
         Enable or disable VOICE_MOD_ENABLE
 
         Corresponding command: AT+CECRX
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def nlpp_gain(device: Device) -> str:
+    def nlpp_gain(self) -> str:
         """
         Modify the NLPP_gain in DSP
 
         Corresponding command: AT+CNLPPG
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def nlpp_limit(device: Device) -> str:
+    def nlpp_limit(self) -> str:
         """
         Modify the NLPP_limit in DSP
 
         Corresponding command: AT+CNLPPL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def echo_canceller(device: Device) -> str:
+    def echo_canceller(self) -> str:
         """
         Adjust echo canceller
 
         Corresponding command: AT+CECM
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def usb_sample_rate(device: Device) -> str:
+    def usb_sample_rate(self) -> str:
         """
         Set usb audio sample rate to 16K bit
 
         Corresponding command: AT+CPCMFRM
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def play_tone(device: Device) -> str:
+    def play_tone(self) -> str:
         """
         Play tone
 
         Corresponding command: AT+CPTONE
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def codec_control(device: Device) -> str:
+    def codec_control(self) -> str:
         """
         Control codec by Host device or Module
 
         Corresponding command: AT+CODECCTL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def pcm_sample_rate(device: Device) -> str:
+    def pcm_sample_rate(self) -> str:
         """
         Modify the sampling rate of the PCM
 
         Corresponding command: AT+CPCMBANDWIDTH
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def voice_device(device: Device) -> str:
+    def voice_device(self) -> str:
         """
         Switch voice channel device
 
         Corresponding command: AT+CSDVC
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises CallControlException:
         """
