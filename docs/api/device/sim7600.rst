@@ -1,0 +1,7 @@
+.. _topics-api-device-sim7600:
+
+=============
+SIM7600Device
+=============
+
+.. automodule:: py_sim7600.device.sim7600

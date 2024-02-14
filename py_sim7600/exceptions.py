@@ -23,49 +23,56 @@ class SIM7600Exception(Exception):
         return super().__str__() + f" {self.errors}"
 
 
-class V25TERException(SIM7600Exception):
+class ControllerException(SIM7600Exception):
+    """
+    Exception raised by the base Controller class
+    """
+    pass
+
+
+class V25TERException(ControllerException):
     """
     Exception raised by V25TER commands
     """
     pass
 
 
-class StatusControlException(SIM7600Exception):
+class StatusControlException(ControllerException):
     """
     Exception raised by status control commands
     """
     pass
 
 
-class NetworkException(SIM7600Exception):
+class NetworkException(ControllerException):
     """
     Exception raised by network commands
     """
     pass
 
 
-class CallControlException(SIM7600Exception):
+class CallControlException(ControllerException):
     """
     Exception raised by call control commands
     """
     pass
 
 
-class PhonebookException(SIM7600Exception):
+class PhonebookException(ControllerException):
     """
     Exception raised by phonebook commands
     """
     pass
 
 
-class SIMApplicationToolkitException(SIM7600Exception):
+class SIMApplicationToolkitException(ControllerException):
     """
     Exception raised by phonebook commands
     """
     pass
 
 
-class GPRSException(SIM7600Exception):
+class GPRSException(ControllerException):
     """
     Exception raised by phonebook commands
     """

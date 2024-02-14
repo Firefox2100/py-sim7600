@@ -1,6 +1,5 @@
 """
-This file contains class to interface with the hardware directly. This file may raise SIM7600Exception,
-remember to capture accordingly.
+This module contains the classes and functions to interact with a SIMCom device.
 """
 
 import serial
@@ -18,29 +17,66 @@ except ImportError:
 
 class Device:
     """
-    Class to communicate directly with SIM7600 device
+    Class to communicate directly with SIMCom device
     """
 
-    def __init__(self, port: str, baud=115200):
+    def __init__(self, port: str, baud=115200, serial_device: serial.Serial = None):
         """
         Constructor
 
         :param port: Port to connect to
         :param baud: Optional. Baud rate of the connection
+        :param serial_device: Optional. A serial device to use
         """
         self.__port = port
         self.__is_rpi = is_rpi
-        self.__serial = serial.Serial(port, baud)
+
+        if serial_device is not None:
+            self.__serial = serial_device
+        else:
+            self.__serial = serial.Serial(port, baud)
         self.__serial.reset_input_buffer()
         self.__power_key = 6
         self.__is_on = not self.__is_rpi
 
-    def open(self):
+    def verify(self) -> bool:
+        """
+        Verify that this is indeed a SIMCom device
+
+        :return: True if the device is verified, False otherwise
+        :rtype: bool
+        """
+
+        was_open = self.__serial.is_open
+
+        if not was_open:
+            self.open()
+
+        self.__serial.write(b'AT\r')
+        response = self.read_full_response('\r\n')
+
+        if not was_open:
+            self.close()
+
+        return 'OK' in response
+
+    @property
+    def is_open(self) -> bool:
+        """
+        Check if the serial connection is open
+
+        :return: True if the connection is open, False otherwise
+        :rtype: bool
+        """
+
+        return self.__serial.is_open
+
+    def open(self) -> None:
         """
         Open the serial connection
 
         :return: None
-        :raises DeviceException: If the connection fails
+        :raises DeviceException: If the port fails to open
         """
 
         try:
@@ -48,16 +84,18 @@ class Device:
         except serial.SerialException as e:
             raise DeviceException() from e
 
-    def close(self):
+    def close(self) -> None:
         """
         Close the serial connection
 
         :return: None
         """
+        try:
+            self.__serial.close()
+        except serial.SerialException:
+            pass
 
-        self.__serial.close()
-
-    def power_on(self):
+    def power_on(self) -> None:
         """
         Turn on the device
 
@@ -98,13 +136,15 @@ class Device:
         else:
             raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
-    def read_full_response(self, timeout=5, pattern='\r\n') -> str | None:
+    def read_full_response(self, pattern : str, timeout=5) -> str | None:
         """
         Read the full response from the device.
 
-        SIM7600 responses are in the format of <CR><LF>...<CR><LF>,
-        so this function looks for a starting and ending pattern to
-        determine when the response is complete.
+        :param timeout: Optional. Timeout time in seconds
+        :param pattern: The pattern that encapsulates the response
+        :return: The response string. None if no response is received
+        :rtype: str | None
+        :raises DeviceException: If the device read times out
         """
 
         start_time = time.time()
@@ -142,15 +182,16 @@ class Device:
 
         raise DeviceException("Device read timeout")
 
-    def send(self, command: str, back: str = None, timeout=5) -> str:
+    def send(self, command: str, pattern: str, back: str = None, timeout=5) -> str:
         """
-        Send a command to the device, without expecting a result
+        Send a command to the device, and check for a successful response.
 
         :param command: Raw command to send to the string
         :param back: String expected to be in the successful result
         :param timeout: Optional. Timeout time in seconds
+        :param pattern: Optional. The pattern that encapsulates the response
         :return: The result string returned by the device
-        :rtype: bool
+        :rtype: str
         :raises DeviceException: If the device is off or the command fails
         """
 
@@ -158,7 +199,7 @@ class Device:
             raise DeviceException("Device not on")
 
         self.__serial.write((command + "\r").encode())
-        response = self.read_full_response(timeout)
+        response = self.read_full_response(pattern, timeout)
 
         if response is not None:
             if back is not None and back not in response:

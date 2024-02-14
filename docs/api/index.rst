@@ -11,8 +11,8 @@ This is a reference for all classes and methods implemented for API development.
     :caption: Contents:
 
     exceptions
-    device
-    interface
+    device/index
+    interface/index
     controller/index
 
 .. automodule:: py_sim7600

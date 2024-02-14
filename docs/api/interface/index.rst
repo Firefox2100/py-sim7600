@@ -1,7 +1,7 @@
 .. _topics-api-interface:
 
-=========
-Interface
-=========
+==========
+Interfaces
+==========
 
 .. automodule:: py_sim7600.interface

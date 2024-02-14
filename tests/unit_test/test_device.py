@@ -1,23 +1,8 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from py_sim7600.device import Device, DeviceException
 
 from . import MockSerial
-
-
-@pytest.fixture
-def mock_serial():
-    with patch('serial.Serial', new=MockSerial) as mock_serial:
-        yield mock_serial
-
-
-@pytest.fixture
-def mock_device(mock_serial):
-    port = '/dev/ttyUSB0'
-    baud = 115200
-    device = Device(port, baud)
-    yield device
 
 
 class TestDevice:
@@ -58,6 +43,6 @@ class TestDevice:
             'output': b'\r\nOK\r\n',
         })
 
-        result = mock_device.send('AT')
+        result = mock_device.send('AT', '\r\n')
 
         assert result == 'OK'

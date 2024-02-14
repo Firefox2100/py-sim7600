@@ -42,6 +42,10 @@ class MockSerial:
     def out_waiting(self):
         return len(self._output_buffer)
 
+    @property
+    def is_open(self):
+        return self._is_open
+
     def _respond(self, input_data: bytes) -> bytes:
         """
         This method finds a matching response for the input data and
@@ -56,7 +60,7 @@ class MockSerial:
                 return response['output']
 
         if self._should_raise:
-            raise Exception('No matching response found')
+            raise ValueError('No matching response found')
 
         return self._default_response
 
