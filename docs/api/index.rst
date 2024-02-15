@@ -10,9 +10,10 @@ This is a reference for all classes and methods implemented for API development.
     :maxdepth: 3
     :caption: Contents:
 
-    exceptions
     device/index
     interface/index
     controller/index
+    model/index
+    exceptions
 
 .. automodule:: py_sim7600

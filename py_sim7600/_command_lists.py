@@ -4,11 +4,6 @@ This file contains all name constraints used in this library.
 For detailed explanation, please check the individual comments and DocString.
 """
 
-memory_list = ["DC", "MC", "RC", "SM", "ME", "FD", "ON", "LD", "EN"]
-"""
-This is the memory name allowed to use in the command ATD.
-"""
-
 pin_status = ["READY", "SIM PIN", "SIM PUK", "PH-SIM PIN", "SIM PIN2", "SIM PUK2", "PH-NET PIN"]
 """
 This is the PIN status return from command AT+CPIN.

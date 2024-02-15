@@ -136,7 +136,7 @@ class Device:
         else:
             raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
-    def read_full_response(self, pattern : str, timeout=5) -> str | None:
+    def read_full_response(self, pattern: str, timeout=5) -> str | None:
         """
         Read the full response from the device.
 

@@ -6,6 +6,57 @@ from enum import Enum
 
 
 """
+The Enum classes in this section is for V.25 TER controller.
+"""
+
+
+class PhonebookStorage(Enum):
+    """
+    The phonebook storage location.
+    """
+    ME_DIALED = 'DC'            # ME dialed calls list
+    ME_MISSED = 'MC'            # ME missed (unanswered received) calls list
+    ME_RECEIVED = 'RC'          # ME received calls list
+    SIM_PHONEBOOK = 'SM'        # SIM phonebook
+    UE_PHONEBOOK = 'ME'         # UE phonebook
+    SIM_FIXED_DIALING = 'FD'    # SIM fixed dialing phonebook
+    MSISDN = 'ON'               # MSISDN list
+    LAST_DIALED = 'LD'          # Last number dialed phonebook
+    EMERGENCY = 'EN'            # Emergency numbers
+
+
+class ControlCharacterFormat(Enum):
+    """
+    The control character framing format for serial port communication.
+    """
+    D8S2 = 1                    # 8 data bits, 2 stop bits
+    D8P1S1 = 2                  # 8 data bits, 1 parity bit, 1 stop bit
+    D8S1 = 3                    # 8 data bits, 1 stop bit
+    D7S2 = 4                    # 7 data bits, 2 stop bits
+    D7P1S1 = 5                  # 7 data bits, 1 parity bit, 1 stop bit
+    D7S1 = 6                    # 7 data bits, 1 stop bit
+    
+
+class ControlCharacterParity(Enum):
+    """
+    The control character parity for serial port communication.
+    """
+    ODD = 0                     # Odd parity
+    EVEN = 1                    # Even parity
+    SPACE = 2                   # Space parity
+    NONE = 3                    # No parity
+
+
+class TECharacterSet(Enum):
+    """
+    The character set for TE.
+    """
+    GSM = 'GSM'                # GSM default alphabet; this setting causes XON /XOFF problems.
+    IRA = 'IRA'                # International reference alphabet
+    UCS2 = 'UCS2'              # 16-bit universal multiple-octet coded character set
+
+
+"""
 The Enum classes in this section is for call controller.
 """
 
@@ -41,7 +92,6 @@ class BearerServiceName(Enum):
     ASYNC_MODEM = 0         # Asynchronous modem
     SYNC_MODEM = 1          # Synchronous modem
     RDI = 4                 # data circuit asynchronous (RDI)
-
 
 
 class BearerServiceConnectionElement(Enum):

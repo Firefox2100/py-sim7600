@@ -6,12 +6,14 @@ remember to capture accordingly.
 """
 
 import time
+import re
 
-import py_sim7600.controller as controller
+from py_sim7600.controller import DeviceController
 from py_sim7600.exceptions import V25TERException, DeviceException
+from py_sim7600.model import enums
 
 
-class V25TERController(controller.DeviceController):
+class V25TERController(DeviceController):
     """
     Controller for AT Commands According to V.25TER
     """
@@ -66,21 +68,19 @@ class V25TERController(controller.DeviceController):
 
         return True
 
-    def dial_from(self, target: str | int, memory: str = None, voice=True) -> bool:
+    def dial_from(self, target: str | int, memory: enums.PhonebookStorage = None, voice=True) -> bool:
         """
         Originate call from specified memory or active memory
 
         Corresponding command: ATD>
 
         :param voice: Control whether to make a data call
-        :param memory: The memory to pull number from. Leave empty to use active memory
+        :param memory: The memory to pull number from. Leave empty to use currently active memory
         :param target: The target to call
         :return: True if call is successful
         :rtype: bool
         :raises AssertionError: Memory type error
         """
-
-        from py_sim7600._command_lists import memory_list
 
         command = 'ATD>'
         back = 'OK'
@@ -96,9 +96,7 @@ class V25TERController(controller.DeviceController):
             # From active memory
             command += target
         else:
-            assert memory in memory_list, 'Memory type error'
-
-            command += memory + target
+            command += memory.value + target
 
         if voice:
             command += ';'
@@ -157,8 +155,8 @@ class V25TERController(controller.DeviceController):
                 raise e
 
         self.device.send(
-            command="ATH",
-            back="OK"
+            command='ATH',
+            back='OK'
         )
 
         return True
@@ -175,21 +173,21 @@ class V25TERController(controller.DeviceController):
         :raises V25TERException: Auto answer time set to too long or too short
         """
 
-        command = "ATS0="
+        command = 'ATS0='
 
         if times > 255 or times < 0:
-            raise V25TERException("Auto answer times out of range")
+            raise V25TERException('Auto answer times out of range')
 
         command += str(times).zfill(3)
 
         self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
         return True
 
-    def check_auto_answer(self) -> int:
+    def get_auto_answer(self) -> int:
         """
         Check the auto answer configuration
 
@@ -200,11 +198,11 @@ class V25TERController(controller.DeviceController):
         :raises V25TERException: Auto answer time set to too long or too short
         """
 
-        command = "ATS0?"
+        command = 'ATS0?'
 
         result = self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
         times = int(result[0:3])
@@ -224,8 +222,8 @@ class V25TERController(controller.DeviceController):
         time.sleep(1)
 
         self.device.send(
-            command="+++",
-            back="OK",
+            command='+++',
+            back='OK',
         )
 
         return True
@@ -241,8 +239,8 @@ class V25TERController(controller.DeviceController):
         """
 
         self.device.send(
-            command="ATO",
-            back="CONNECT",
+            command='ATO',
+            back='CONNECT',
         )
 
         return True
@@ -258,15 +256,15 @@ class V25TERController(controller.DeviceController):
         """
 
         result = self.device.send(
-            command="ATI",
-            back="OK",
+            command='ATI',
+            back='OK',
         )
 
         result_dict = {}
 
-        for line in result.split("\r"):
-            if line != "OK":
-                key, value = line.split(": ")
+        for line in result.split('\r'):
+            if line != 'OK':
+                key, value = line.split(': ')
 
                 if ',' in value:
                     value = value.split(',')
@@ -297,16 +295,16 @@ class V25TERController(controller.DeviceController):
         :rtype: bool
         """
 
-        command = "AT+IPR=" + str(baud)
+        command = 'AT+IPR=' + str(baud)
 
         self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
         return True
 
-    def check_baud(self) -> int:
+    def get_baud(self) -> int:
         """
         Check the current baud rate setting
 
@@ -317,13 +315,19 @@ class V25TERController(controller.DeviceController):
         """
 
         result = self.device.send(
-            command="AT+IPR?",
-            back="OK",
+            command='AT+IPR?',
+            back='OK',
         )
 
-        return int(result.split(":")[1])
+        pattern = r'\+IPR: (\d+)'
+        result = re.search(pattern, result)
 
-    def set_control_character(self, format_control: int, parity=-1) -> bool:
+        return int(result.group(1))
+
+    def set_control_character(self,
+                              format_control: enums.ControlCharacterFormat,
+                              parity: enums.ControlCharacterParity = None,
+                              ) -> bool:
         """
         Set control character framing
 
@@ -336,29 +340,28 @@ class V25TERController(controller.DeviceController):
         :raises V25TERException: Parity code error or Format code error
         """
 
-        command = "AT+ICF="
+        command = 'AT+ICF='
 
-        if format_control < 0 or format_control > 6:
-            raise V25TERException("Format code error")
-        elif format_control == 2 or format_control == 5:
-            if parity == -1:
-                raise V25TERException("Parity code need to be set for this format")
+        if format_control == enums.ControlCharacterFormat.D7P1S1 or \
+                format_control == enums.ControlCharacterFormat.D8P1S1:
+            if parity is None:
+                raise V25TERException('Parity code need to be set for this format')
             else:
-                command += f'{format_control},{parity}'
+                command += f'{format_control.value},{parity.value}'
         else:
-            if parity != -1:
-                raise V25TERException("Parity code no need to be set for this format")
+            if parity is not None and parity != enums.ControlCharacterParity.NONE:
+                raise V25TERException('Parity code no need to be set for this format')
             else:
-                command += str(format_control)
+                command += str(format_control.value)
 
         result = self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
         return result
 
-    def check_control_character(self) -> (int, int):
+    def get_control_character(self) -> (enums.ControlCharacterFormat, enums.ControlCharacterParity):
         """
         Check the current control character framing setting
 
@@ -369,42 +372,46 @@ class V25TERController(controller.DeviceController):
         """
 
         result = self.device.send(
-            command="AT+ICF?",
-            back="OK",
+            command='AT+ICF?',
+            back='OK',
         )
 
-        settings = result.split(":")[1].split(",")
+        pattern = r'\+ICF: (\d+),(\d+)'
+        result = re.search(pattern, result)
 
-        return int(settings[0]), int(settings[1])
+        return (
+            enums.ControlCharacterFormat(int(result.group(1))),
+            enums.ControlCharacterParity(int(result.group(2)))
+        )
 
-    def set_data_flow(self, dce: int, dte=0) -> bool:
+    def set_data_flow(self, rts=False, cts=False) -> bool:
         """
         Set local data flow control
 
         Corresponding command: AT+IFC
 
-        :param dce: DCE value
-        :param dte: DTE value
+        :param rts: Whether to set RTS hardware flow control
+        :param cts: Whether to set CTS hardware flow control
         :return: True if setting is successful
         :rtype: bool
         :raises V25TERException: Control value error
         """
 
-        command = "AT+IFC="
+        command = 'AT+IFC='
 
-        if (dce != 0 and dce != 2) or (dte != 0 and dte != 2):
-            raise V25TERException("Control value error")
-        else:
-            command += f'{dce},{dte}'
+        dce = 2 if rts else 0
+        dte = 2 if cts else 0
+
+        command += f'{dce},{dte}'
 
         self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
         return True
 
-    def check_data_flow(self) -> (int, int):
+    def get_data_flow(self) -> (bool, bool):
         """
         Check the current data flow control setting
 
@@ -415,13 +422,17 @@ class V25TERController(controller.DeviceController):
         """
 
         result = self.device.send(
-            command="AT+IFC?",
-            back="OK",
+            command='AT+IFC?',
+            back='OK',
         )
 
-        settings = result.split(":")[1].split(",")
+        pattern = r'\+IFC: (\d+),(\d+)'
+        result = re.search(pattern, result)
 
-        return int(settings[0]), int(settings[1])
+        return (
+            int(result.group(1)) == 2,
+            int(result.group(2)) == 2
+        )
 
     def set_dcd_function(self, dcd: int) -> bool:
         """
@@ -436,16 +447,16 @@ class V25TERController(controller.DeviceController):
         """
 
         if dcd < 0 or dcd > 2:
-            raise V25TERException("DCD value error")
+            raise V25TERException('DCD value error')
 
         self.device.send(
-            command="AT&C" + str(dcd),
-            back="OK",
+            command='AT&C' + str(dcd),
+            back='OK',
         )
 
         return True
 
-    def enable_command_echo(self, enable: int) -> bool:
+    def enable_command_echo(self, enable: bool) -> bool:
         """
         Enable command echo
 
@@ -457,12 +468,9 @@ class V25TERController(controller.DeviceController):
         :raises V25TERException: Device echo value error
         """
 
-        if enable != 0 and enable != 1:
-            raise V25TERException("Device echo value error")
-
         self.device.send(
-            command="ATE" + str(enable),
-            back="OK",
+            command='ATE' + str(int(enable)),
+            back='OK',
         )
 
         return True
@@ -478,19 +486,43 @@ class V25TERController(controller.DeviceController):
         """
 
         result = self.device.send(
-            command="AT&V",
-            back="OK",
+            command='AT&V',
+            back='OK',
         )
 
         config = {}
+        items = result.split('\r')
 
-        for conf_str in result.split(';'):
-            conf_arr = conf_str.split(':')
-            if len(conf_arr) == 2:
-                attribute = conf_arr[0].strip()
-                value = conf_arr[1].strip()
+        for item in items:
+            item = item.strip()
+            if not item:
+                continue
 
-                config[attribute] = value
+            config_set = item.split(';')
+            for c in config_set:
+                c = c.strip()
+                if not c or c == 'OK':
+                    continue
+
+                k, v = c.split(':')
+                k = k.strip()
+                v = v.strip()
+
+                if ',' in v:
+                    v = v.split(',')
+
+                    for i in range(len(v)):
+                        try:
+                            v[i] = int(v[i])
+                        except ValueError:
+                            pass
+                else:
+                    try:
+                        v = int(v)
+                    except ValueError:
+                        pass
+
+                config[k] = v
 
         return config
 
@@ -507,55 +539,47 @@ class V25TERController(controller.DeviceController):
         """
 
         if dtr < 0 or dtr > 2:
-            raise V25TERException("DTR Mode value error")
+            raise V25TERException('DTR Mode value error')
 
         self.device.send(
-            command="AT&D" + str(dtr),
-            back="OK",
+            command='AT&D' + str(dtr),
+            back='OK',
         )
 
         return True
 
-    def set_dsr(self, dsr: int) -> bool:
+    def set_dsr(self, always_on: bool) -> bool:
         """
         Set DSR function mode
 
         Corresponding command: AT&S
 
-        :param dsr: The mode to set DSR display
+        :param always_on: Set whether DSR is always on
         :return: True if setting is successful
         :rtype: bool
-        :raises V25TERException: DSR display mode value error
         """
 
-        if dsr != 0 and dsr != 1:
-            raise V25TERException("DSR display mode value error")
-
         self.device.send(
-            command="AT&S" + str(dsr),
-            back="OK",
+            command='AT&S' + str(int(always_on)),
+            back='OK',
         )
 
         return True
 
-    def set_result_format(self, r_format: int) -> bool:
+    def set_result_format(self, verbose: bool) -> bool:
         """
         Set result code format mode
 
         Corresponding command: ATV
 
-        :param r_format: The format to set the result output
+        :param verbose: Set whether to use long, verbose format
         :return: True if setting is successful
         :rtype: bool
-        :raises V25TERException: Result format display mode value error
         """
 
-        if r_format != 0 and r_format != 1:
-            raise V25TERException("Result format display mode value error")
-
         self.device.send(
-            command="ATV" + str(r_format),
-            back="",
+            command='ATV' + str(int(verbose)),
+            back='OK',
         )
 
         return True
@@ -571,36 +595,38 @@ class V25TERController(controller.DeviceController):
         :rtype: bool
         """
 
-        command = "AT&F"
+        command = 'AT&F'
 
         if temporary:
-            command += "0"
+            command += '0'
 
         self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
         return True
 
-    def set_result_presentation(self, dce=0) -> bool:
+    def set_result_presentation(self, transmit=True) -> bool:
         """
         Set Result Code Presentation Mode
 
         Corresponding command: ATQ
 
-        :param dce: Set whether DCE return code is transmitted
+        :param transmit: Set whether DCE transmits result code
         :return: True if setting is successful
         :rtype: bool
         :raises V25TERException: Result format display mode value error
         """
 
-        if dce != 0 and dce != 1:
-            raise V25TERException("Result format display mode value error")
+        if transmit:
+            dce = 0
+        else:
+            dce = 1
 
         self.device.send(
-            command="ATQ" + str(dce),
-            back="",
+            command='ATQ' + str(dce),
+            back='OK',
         )
 
         return True
@@ -618,225 +644,259 @@ class V25TERController(controller.DeviceController):
         """
 
         if mode < 0 or mode > 4:
-            raise V25TERException("Connect mode value error")
+            raise V25TERException('Connect mode value error')
 
         self.device.send(
-            command="ATX" + str(mode),
-            back="OK",
+            command='ATX' + str(mode),
+            back='OK',
         )
 
         return True
 
-    def set_connect_protocol(self, report=0):
+    def set_connect_protocol(self, report=False) -> bool:
         """
         Set CONNECT Result Code Format About Protocol
 
         Corresponding command: AT\\V
 
         :param report: Set whether to report communication protocol
-        :return: Results from device return buffer
+        :return: True if setting is successful
+        :rtype: bool
         :raises V25TERException: Report mode value error
         """
 
-        if report != 0 and report != 1:
-            raise V25TERException("Report mode value error")
-
         self.device.send(
-            command="AT\\V" + str(report),
-            back="OK",
+            command='AT\\V' + str(int(report)),
+            back='OK',
         )
 
-        return self.device.result()
+        return True
 
-    def set_connect_speed(self, speed=1):
+    def set_connect_speed(self, report_serial=True) -> bool:
         """
         Set CONNECT Result Code Format About Speed
 
         Corresponding command: AT&E
 
-        :param speed: The speed to set
-        :return: Results from device return buffer
-        :raises V25TERException: Speed mode value error
+        :param report_serial: Set whether to report serial speed or wireless speed
+        :return: True if setting is successful
+        :rtype: bool
         """
 
-        if speed != 0 and speed != 1:
-            raise V25TERException("Speed mode value error")
-
         self.device.send(
-            command="AT&E" + str(speed),
-            back="OK",
+            command='AT&E' + str(int(report_serial)),
+            back='OK',
         )
 
-        return self.device.result()
+        return True
 
-    def save_config(self):
+    def save_config(self) -> bool:
         """
         Save the user setting to ME
 
         Corresponding command: AT&W
 
-        :return: Results from device return buffer
+        :return: True if setting is successful
+        :rtype: bool
         """
 
         self.device.send(
-            command="AT&W",
-            back="OK",
+            command='AT&W0',
+            back='OK',
         )
 
-        return self.device.result()
+        return True
 
-    def restore_config(self):
+    def restore_config(self) -> bool:
         """
         Restore the user setting from ME
 
         Corresponding command: ATZ
 
-        :return: Results from device return buffer
+        :return: True if setting is successful
+        :rtype: bool
         """
 
         self.device.send(
-            command="ATZ",
-            back="OK",
+            command='ATZ0',
+            back='OK',
         )
 
-        return self.device.result()
+        return True
 
-    def get_manufacturer(self):
+    def get_manufacturer(self) -> str:
         """
         Request manufacturer identification
 
         Corresponding command: AT+CGMI
 
-        :return: Results from device return buffer
+        :return: Manufacturer identification
+        :rtype: str
         """
 
-        self.device.send(
-            command="AT+CGMI",
-            back="OK",
+        result = self.device.send(
+            command='AT+CGMI',
+            back='OK',
         )
 
-        return self.device.result()
+        return result.split('\r')[0]
 
-    def get_model(self):
+    def get_model(self) -> str:
         """
         Request model identification
 
         Corresponding command: AT+CGMM
 
-        :return: Results from device return buffer
+        :return: Model identification
+        :rtype: str
         """
 
-        self.device.send(
-            command="AT+CGMM",
-            back="OK",
+        result = self.device.send(
+            command='AT+CGMM',
+            back='OK',
         )
 
-        return self.device.result()
+        return result.split('\r')[0]
 
-    def get_revision(self):
+    def get_revision(self) -> str:
         """
         Request revision identification
 
         Corresponding command: AT+CGMR
 
-        :return: Results from device return buffer
+        :return: Revision identification
+        :rtype: str
         """
 
-        self.device.send(
-            command="AT+CGMR",
-            back="OK",
+        result = self.device.send(
+            command='AT+CGMR',
+            back='OK',
         )
 
-        return self.device.result()
+        revision = result.split('\r')[0].split(' ')[1]
 
-    def get_serial(self):
+        return revision
+
+    def get_serial(self) -> int:
         """
         Request product serial number identification
 
         Corresponding command: AT+CGSN
 
-        :return: Results from device return buffer
+        :return: Serial number identification
+        :rtype: int
         """
 
-        self.device.send(
-            command="AT+CGSN",
-            back="OK",
+        result = self.device.send(
+            command='AT+CGSN',
+            back='OK',
         )
 
-        return self.device.result()
+        return int(result.split('\r')[0])
 
-    def set_te(self, char_set: str, check=False):
+    def set_te_charset(self, char_set: enums.TECharacterSet):
         """
         Select TE character set
 
         Corresponding command: AT+CSCS
 
-        :param check: Set whether to check the current setting
         :param char_set: The character set to use
-        :return: Results from device return buffer
-        :raises V25TERException: Character set parameter error
+        :return: True if setting is successful
+        :rtype: bool
         """
 
-        command = "AT+CSCS"
-
-        if check:
-            command += "?"
-        elif char_set == "IRA" or char_set == "GSM" or char_set == "UCS2":
-            command += '="' + char_set
-        else:
-            raise V25TERException("Character set parameter error")
+        command = 'AT+CSCS=' + f'"{char_set.value}"'
 
         self.device.send(
             command=command,
-            back="OK",
+            back='OK',
         )
 
-        return self.device.result()
+        return True
 
-    def get_international_subscriber(self):
+    def get_te_charset(self) -> enums.TECharacterSet:
+        """
+        Request TE character set
+
+        Corresponding command: AT+CSCS?
+
+        :return: The character set currently in use
+        :rtype: enums.TECharacterSet
+        """
+
+        result = self.device.send(
+            command='AT+CSCS?',
+            back='OK',
+        )
+
+        pattern = r'\+CSCS: "(\w+)"'
+        result = re.search(pattern, result)
+
+        return enums.TECharacterSet(result.group(1))
+
+    def get_international_subscriber(self) -> int:
         """
         Request international mobile subscriber identity
 
         Corresponding command: AT+CIMI
 
-        :return: Results from device return buffer
+        :return: International mobile subscriber identity
+        :rtype: int
         """
 
-        self.device.send(
-            command="AT+CIMI",
-            back="OK",
+        result = self.device.send(
+            command='AT+CIMI',
+            back='OK',
         )
 
-        return self.device.result()
+        pattern = r'(^\d{15})'
+        result = re.search(pattern, result)
 
-    def get_another_subscriber(self):
+        return int(result.group(1))
+
+    def get_another_subscriber(self) -> int:
         """
         Request another international mobile subscriber identity
 
         Corresponding command: AT+CIMIM
 
-        :return: Results from device return buffer
+        :return: International mobile subscriber identity
+        :rtype: int
         """
 
-        self.device.send(
-            command="AT+CIMIM",
-            back="OK",
+        result = self.device.send(
+            command='AT+CIMIM',
+            back='OK',
         )
 
-        return self.device.result()
+        pattern = r'(^\d{15})'
+        result = re.search(pattern, result)
 
-    def get_capabilities(self):
+        return int(result.group(1))
+
+    def get_capabilities(self) -> dict:
         """
         Request overall capabilities
 
         Corresponding command: AT+GCAP
 
-        :return: Results from device return buffer
+        :return: Capabilities
+        :rtype: dict
         """
 
-        self.device.send(
-            command="AT+GCAP",
-            back="OK",
+        result = self.device.send(
+            command='AT+GCAP',
+            back='OK',
         )
 
-        return self.device.result()
+        capabilities = {
+            'CGSM': '+CGSM' in result,
+            'FCLASS': '+FCLASS' in result,
+            'DS': '+DS' in result,
+            'ES': '+ES' in result,
+            'CIS707-A': '+CIS707-A' in result,
+            'CIS-856': '+CIS-856' in result,
+            'MS': '+MS' in result,
+        }
+
+        return capabilities

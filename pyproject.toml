@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "py-sim7600"
-version = "0.1.0"
+dynamic = ["version"]
 authors = [
     { name = "Firefox2100", email = "wangyunze16@gmail.com" },
 ]
@@ -24,3 +24,6 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/Firefox2100/py-sim7600"
 "Bug Tracker" = "https://github.com/Firefox2100/py-sim7600/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "py_sim7600.__version__"}
