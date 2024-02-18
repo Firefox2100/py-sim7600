@@ -61,10 +61,14 @@ class V25TERController(DeviceController):
         else:
             back = 'CONNECT'
 
-        self.device.send(
-            command=command,
-            back=back,
-        )
+        try:
+            self.device.send(
+                command=command,
+                back=back,
+                error_pattern=['NO CARRIER', 'ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot dial number: {e}')
 
         return True
 
@@ -103,10 +107,14 @@ class V25TERController(DeviceController):
         else:
             back = 'CONNECT'
 
-        self.device.send(
-            command=command,
-            back=back,
-        )
+        try:
+            self.device.send(
+                command=command,
+                back=back,
+                error_pattern=['NO CARRIER', 'ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot dial number: {e}')
 
         return True
 
@@ -122,15 +130,13 @@ class V25TERController(DeviceController):
         """
 
         try:
-            result = self.device.send(
+            self.device.send(
                 command='ATA',
                 back='OK',
+                error_pattern=['NO CARRIER'],
             )
-
-            if 'NO CARRIER' in result:
-                raise V25TERException("No incoming call or no reception")
         except DeviceException as e:
-            raise V25TERException from e
+            raise V25TERException(f'Cannot answer call: {e}')
 
         return True
 
@@ -154,10 +160,13 @@ class V25TERController(DeviceController):
             if not call_controller.check_control_voice_hangup():
                 raise e
 
-        self.device.send(
-            command='ATH',
-            back='OK'
-        )
+        try:
+            self.device.send(
+                command='ATH',
+                back='OK'
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot disconnect call: {e}')
 
         return True
 
@@ -180,10 +189,14 @@ class V25TERController(DeviceController):
 
         command += str(times).zfill(3)
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set auto answer: {e}')
 
         return True
 
@@ -200,10 +213,14 @@ class V25TERController(DeviceController):
 
         command = 'ATS0?'
 
-        result = self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get auto answer: {e}')
 
         times = int(result[0:3])
 
@@ -221,10 +238,13 @@ class V25TERController(DeviceController):
 
         time.sleep(1)
 
-        self.device.send(
-            command='+++',
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='+++',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot switch to command mode: {e}')
 
         return True
 
@@ -238,10 +258,14 @@ class V25TERController(DeviceController):
         :rtype: bool
         """
 
-        self.device.send(
-            command='ATO',
-            back='CONNECT',
-        )
+        try:
+            self.device.send(
+                command='ATO',
+                back='CONNECT',
+                error_pattern=['NO CARRIER', 'ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot switch to data mode: {e}')
 
         return True
 
@@ -255,10 +279,13 @@ class V25TERController(DeviceController):
         :rtype: dict
         """
 
-        result = self.device.send(
-            command='ATI',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='ATI',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get product identification: {e}')
 
         result_dict = {}
 
@@ -297,10 +324,14 @@ class V25TERController(DeviceController):
 
         command = 'AT+IPR=' + str(baud)
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set baud rate: {e}')
 
         return True
 
@@ -314,10 +345,13 @@ class V25TERController(DeviceController):
         :rtype: int
         """
 
-        result = self.device.send(
-            command='AT+IPR?',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+IPR?',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get baud rate: {e}')
 
         pattern = r'\+IPR: (\d+)'
         result = re.search(pattern, result)
@@ -354,10 +388,14 @@ class V25TERController(DeviceController):
             else:
                 command += str(format_control.value)
 
-        result = self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set control character framing: {e}')
 
         return result
 
@@ -371,10 +409,13 @@ class V25TERController(DeviceController):
         :rtype: tuple
         """
 
-        result = self.device.send(
-            command='AT+ICF?',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+ICF?',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get control character framing: {e}')
 
         pattern = r'\+ICF: (\d+),(\d+)'
         result = re.search(pattern, result)
@@ -404,10 +445,14 @@ class V25TERController(DeviceController):
 
         command += f'{dce},{dte}'
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set data flow control: {e}')
 
         return True
 
@@ -421,10 +466,14 @@ class V25TERController(DeviceController):
         :rtype: tuple
         """
 
-        result = self.device.send(
-            command='AT+IFC?',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+IFC?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get data flow control: {e}')
 
         pattern = r'\+IFC: (\d+),(\d+)'
         result = re.search(pattern, result)
@@ -449,10 +498,14 @@ class V25TERController(DeviceController):
         if dcd < 0 or dcd > 2:
             raise V25TERException('DCD value error')
 
-        self.device.send(
-            command='AT&C' + str(dcd),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='AT&C' + str(dcd),
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set DCD function: {e}')
 
         return True
 
@@ -468,10 +521,14 @@ class V25TERController(DeviceController):
         :raises V25TERException: Device echo value error
         """
 
-        self.device.send(
-            command='ATE' + str(int(enable)),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='ATE' + str(int(enable)),
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set command echo: {e}')
 
         return True
 
@@ -485,44 +542,42 @@ class V25TERController(DeviceController):
         :rtype: dict
         """
 
-        result = self.device.send(
-            command='AT&V',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT&V',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get current configuration: {e}')
 
         config = {}
-        items = result.split('\r')
+        items = (item.strip() for item in result.split('\r') if item.strip() and item.strip() != 'OK')
+
+        def parse_config_item(item: str) -> dict:
+            """
+            Parse a single configuration item into a key-value pair.
+
+            :param item: A string representing the configuration item.
+            :return: A dictionary with a single key-value pair.
+            """
+
+            c = {}
+            k, v = [x.strip() for x in item.split(':')]
+            if ',' in v:
+                # Use a generator expression for concise and efficient parsing
+                v = [int(x) if x.isdigit() else x for x in v.split(',')]
+            else:
+                v = int(v) if v.isdigit() else v
+            c[k] = v
+            return c
 
         for item in items:
-            item = item.strip()
-            if not item:
-                continue
-
             config_set = item.split(';')
             for c in config_set:
                 c = c.strip()
-                if not c or c == 'OK':
-                    continue
-
-                k, v = c.split(':')
-                k = k.strip()
-                v = v.strip()
-
-                if ',' in v:
-                    v = v.split(',')
-
-                    for i in range(len(v)):
-                        try:
-                            v[i] = int(v[i])
-                        except ValueError:
-                            pass
-                else:
-                    try:
-                        v = int(v)
-                    except ValueError:
-                        pass
-
-                config[k] = v
+                if c:
+                    config.update(parse_config_item(c))
 
         return config
 
@@ -541,10 +596,14 @@ class V25TERController(DeviceController):
         if dtr < 0 or dtr > 2:
             raise V25TERException('DTR Mode value error')
 
-        self.device.send(
-            command='AT&D' + str(dtr),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='AT&D' + str(dtr),
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set DTR function: {e}')
 
         return True
 
@@ -559,10 +618,14 @@ class V25TERController(DeviceController):
         :rtype: bool
         """
 
-        self.device.send(
-            command='AT&S' + str(int(always_on)),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='AT&S' + str(int(always_on)),
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set DSR function: {e}')
 
         return True
 
@@ -577,10 +640,13 @@ class V25TERController(DeviceController):
         :rtype: bool
         """
 
-        self.device.send(
-            command='ATV' + str(int(verbose)),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='ATV' + str(int(verbose)),
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set result format: {e}')
 
         return True
 
@@ -600,10 +666,13 @@ class V25TERController(DeviceController):
         if temporary:
             command += '0'
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot reset configuration: {e}')
 
         return True
 
@@ -624,10 +693,14 @@ class V25TERController(DeviceController):
         else:
             dce = 1
 
-        self.device.send(
-            command='ATQ' + str(dce),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='ATQ' + str(dce),
+                back='OK',
+            )
+        except DeviceException as e:
+            if transmit:
+                raise V25TERException(f'Cannot set result presentation: {e}')
 
         return True
 
@@ -646,10 +719,14 @@ class V25TERController(DeviceController):
         if mode < 0 or mode > 4:
             raise V25TERException('Connect mode value error')
 
-        self.device.send(
-            command='ATX' + str(mode),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='ATX' + str(mode),
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set connect format: {e}')
 
         return True
 
@@ -665,10 +742,14 @@ class V25TERController(DeviceController):
         :raises V25TERException: Report mode value error
         """
 
-        self.device.send(
-            command='AT\\V' + str(int(report)),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='AT\\V' + str(int(report)),
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set connect protocol: {e}')
 
         return True
 
@@ -683,10 +764,13 @@ class V25TERController(DeviceController):
         :rtype: bool
         """
 
-        self.device.send(
-            command='AT&E' + str(int(report_serial)),
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='AT&E' + str(int(report_serial)),
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set connect speed: {e}')
 
         return True
 
@@ -700,10 +784,14 @@ class V25TERController(DeviceController):
         :rtype: bool
         """
 
-        self.device.send(
-            command='AT&W0',
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='AT&W0',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot save configuration: {e}')
 
         return True
 
@@ -717,10 +805,14 @@ class V25TERController(DeviceController):
         :rtype: bool
         """
 
-        self.device.send(
-            command='ATZ0',
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command='ATZ0',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot restore configuration: {e}')
 
         return True
 
@@ -734,10 +826,14 @@ class V25TERController(DeviceController):
         :rtype: str
         """
 
-        result = self.device.send(
-            command='AT+CGMI',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CGMI',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get manufacturer identification: {e}')
 
         return result.split('\r')[0]
 
@@ -751,10 +847,14 @@ class V25TERController(DeviceController):
         :rtype: str
         """
 
-        result = self.device.send(
-            command='AT+CGMM',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CGMM',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get model identification: {e}')
 
         return result.split('\r')[0]
 
@@ -768,10 +868,14 @@ class V25TERController(DeviceController):
         :rtype: str
         """
 
-        result = self.device.send(
-            command='AT+CGMR',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CGMR',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get revision identification: {e}')
 
         revision = result.split('\r')[0].split(' ')[1]
 
@@ -787,10 +891,14 @@ class V25TERController(DeviceController):
         :rtype: int
         """
 
-        result = self.device.send(
-            command='AT+CGSN',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CGSN',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get serial number identification: {e}')
 
         return int(result.split('\r')[0])
 
@@ -807,10 +915,14 @@ class V25TERController(DeviceController):
 
         command = 'AT+CSCS=' + f'"{char_set.value}"'
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot set TE character set: {e}')
 
         return True
 
@@ -824,10 +936,13 @@ class V25TERController(DeviceController):
         :rtype: enums.TECharacterSet
         """
 
-        result = self.device.send(
-            command='AT+CSCS?',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CSCS?',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get TE character set: {e}')
 
         pattern = r'\+CSCS: "(\w+)"'
         result = re.search(pattern, result)
@@ -844,10 +959,14 @@ class V25TERController(DeviceController):
         :rtype: int
         """
 
-        result = self.device.send(
-            command='AT+CIMI',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CIMI',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get international mobile subscriber identity: {e}')
 
         pattern = r'(^\d{15})'
         result = re.search(pattern, result)
@@ -864,10 +983,14 @@ class V25TERController(DeviceController):
         :rtype: int
         """
 
-        result = self.device.send(
-            command='AT+CIMIM',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+CIMIM',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get another international mobile subscriber identity: {e}')
 
         pattern = r'(^\d{15})'
         result = re.search(pattern, result)
@@ -884,10 +1007,13 @@ class V25TERController(DeviceController):
         :rtype: dict
         """
 
-        result = self.device.send(
-            command='AT+GCAP',
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command='AT+GCAP',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot get capabilities: {e}')
 
         capabilities = {
             'CGSM': '+CGSM' in result,

@@ -5,6 +5,8 @@ This module contains the classes and functions to interact with a SIMCom device.
 import serial
 import time
 import re
+from threading import Semaphore
+
 from py_sim7600.exceptions import DeviceException
 
 # Attempt to import RPI.GPIO
@@ -19,6 +21,9 @@ class Device:
     """
     Class to communicate directly with SIMCom device
     """
+
+    __spontaneous_responses: list[str] = []        # The responses that were initiated by the device
+    __sem = Semaphore()                            # Semaphore to prevent multiple threads from writing to the device
 
     def __init__(self, port: str, baud=115200, serial_device: serial.Serial = None):
         """
@@ -52,8 +57,9 @@ class Device:
         if not was_open:
             self.open()
 
-        self.__serial.write(b'AT\r')
-        response = self.read_full_response('\r\n')
+        with self.__sem:
+            self.__serial.write(b'AT\r')
+            response = self.read_full_response('\r\n')
 
         if not was_open:
             self.close()
@@ -136,7 +142,7 @@ class Device:
         else:
             raise DeviceException('No GPIO access. Not on a Raspberry Pi?')
 
-    def read_full_response(self, pattern: str, timeout=5) -> str | None:
+    def read_full_response(self, pattern: str, timeout=5) -> list[str] | None:
         """
         Read the full response from the device.
 
@@ -166,13 +172,18 @@ class Device:
                     accumulated_data += self.__serial.read(self.__serial.in_waiting).decode()
 
                     if len(accumulated_data) == current_length:
-                        # Strip the beginning and ending pattern
+                        # Do a look-ahead match to segment one or multiple responses
                         escaped_pattern = re.escape(pattern)
-                        re_pattern = re.compile(f'{escaped_pattern}(.*){escaped_pattern}', re.DOTALL)
-                        match = re.search(re_pattern, accumulated_data)
 
-                        if match:
-                            return match.group(1)
+                        re_pattern = re.compile(
+                            f'{escaped_pattern}(.+?){escaped_pattern}(?={escaped_pattern}|$)',
+                            re.DOTALL
+                        )
+
+                        matches = re_pattern.findall(accumulated_data)
+
+                        if matches:
+                            return matches
                         else:
                             return None
                     else:
@@ -182,12 +193,13 @@ class Device:
 
         raise DeviceException("Device read timeout")
 
-    def send(self, command: str, pattern: str, back: str = None, timeout=5) -> str:
+    def send(self, command: str, pattern: str, back: str = None, error_pattern: list[str] = None, timeout=5) -> str:
         """
         Send a command to the device, and check for a successful response.
 
         :param command: Raw command to send to the string
         :param back: String expected to be in the successful result
+        :param error_pattern: Optional. The response that should be considered an error
         :param timeout: Optional. Timeout time in seconds
         :param pattern: Optional. The pattern that encapsulates the response
         :return: The result string returned by the device
@@ -198,13 +210,70 @@ class Device:
         if not self.__is_on:
             raise DeviceException("Device not on")
 
-        self.__serial.write((command + "\r").encode())
-        response = self.read_full_response(pattern, timeout)
+        with self.__sem:
+            try:
+                self.__serial.write((command + "\r").encode())
+                response = self.read_full_response(pattern, timeout)
+            except Exception as e:
+                raise DeviceException() from e
+
+        result_message = None
+        error_message = ''
 
         if response is not None:
-            if back is not None and back not in response:
-                raise DeviceException("Execution failed", response)
-            else:
-                return response
+            for message in response:
+                if error_pattern is not None and any([error in message for error in error_pattern]):
+                    error_message = message
+                    continue
+
+                if result_message is not None:
+                    self.__spontaneous_responses.append(message)
+                    continue
+
+                if back is not None and back in message:
+                    result_message = message
+                    continue
+
+                if back is None:
+                    # Treat the first response as the result
+                    result_message = message
+                    continue
+
+                self.__spontaneous_responses.append(message)
+
+            if error_message:
+                raise DeviceException(f"Device returned error: {error_message}")
+
+            if result_message is not None:
+                return result_message
+
+        raise DeviceException("Device returned no valid response")
+
+    @property
+    def spontaneous_responses(self, clear=True) -> list[str]:
+        """
+        Get the spontaneous responses from the device
+
+        :return: The spontaneous responses
+        :rtype: list[str]
+        """
+
+        # Read the device again to get more spontaneous responses
+        with self.__sem:
+            try:
+                matches = self.read_full_response('\r\n')
+                if matches is not None:
+                    self.__spontaneous_responses.extend(matches)
+            except DeviceException:
+                pass
+
+        responses = []
+
+        if clear:
+            # No thread lock here, so the results are popped
+            while self.__spontaneous_responses:
+                responses.append(self.__spontaneous_responses.pop(0))
         else:
-            raise DeviceException("Device returned no response")
+            responses = self.__spontaneous_responses
+
+        return responses

@@ -1,7 +1,6 @@
 import pytest
 from numpy.testing import assert_equal
 
-import tests
 from py_sim7600.controller.v25ter import V25TERController, V25TERException
 from py_sim7600.model import enums
 
@@ -32,6 +31,13 @@ class TestV25TERController:
 
         assert result == 'OK'
 
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'A/\r', b'\r\nOK\r\n\r\nAnother response\r\n')], indirect=True)
+    def test_re_issue_with_spontaneous_response(self, mock_v25ter_controller):
+        result = mock_v25ter_controller.re_issue()
+
+        assert result == 'OK'
+        assert mock_v25ter_controller.device.spontaneous_responses == ['Another response']
+
     @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD1234567890;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)
     def test_dial(self, mock_v25ter_controller):
@@ -40,6 +46,13 @@ class TestV25TERController:
         )
 
         assert result
+
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD1234567890;\r', b'\r\nNO CARRIER\r\n')], indirect=True)
+    def test_dial_fail_with_no_carrier(self, mock_v25ter_controller):
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.dial(
+                number='1234567890',
+            )
 
     @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD>SM3;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)

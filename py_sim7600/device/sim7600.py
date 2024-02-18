@@ -15,8 +15,14 @@ class SIM7600Device(Device):
     def read_full_response(self, pattern='\r\n', timeout=2) -> str | None:
         return super().read_full_response(pattern, timeout)
 
-    def send(self, command: str, pattern='\r\n', back: str = None, timeout=2) -> str | None:
-        return super().send(command, pattern, back, timeout)
+    def send(self, command: str, pattern='\r\n', back: str = None, error_pattern: list[str] = None, timeout=2) -> str | None:
+        return super().send(
+            command=command,
+            pattern=pattern,
+            back=back,
+            timeout=timeout,
+            error_pattern=error_pattern,
+        )
 
     def verify(self) -> bool:
         if not super().verify():

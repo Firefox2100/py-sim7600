@@ -51,9 +51,26 @@ class TECharacterSet(Enum):
     """
     The character set for TE.
     """
-    GSM = 'GSM'                # GSM default alphabet; this setting causes XON /XOFF problems.
-    IRA = 'IRA'                # International reference alphabet
-    UCS2 = 'UCS2'              # 16-bit universal multiple-octet coded character set
+    GSM = 'GSM'                 # GSM default alphabet; this setting causes XON /XOFF problems.
+    IRA = 'IRA'                 # International reference alphabet
+    UCS2 = 'UCS2'               # 16-bit universal multiple-octet coded character set
+
+
+"""
+The Enum classes in this section is for status controller.
+"""
+
+
+class PhoneFunctionalityLevel(Enum):
+    """
+    The phone functionality level.
+    """
+    MINIMUM = 0                 # minimum functionality
+    FULL = 1                    # full functionality, online mode
+    NO_RF = 4                   # disable phone both transmit and receive RF circuits
+    FACTORY_TEST = 5            # Factory Test Mode
+    RESET = 6                   # Reset
+    OFFLINE = 7                 # Offline Mode
 
 
 """
