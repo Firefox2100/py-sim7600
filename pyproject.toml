@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "py-sim7600"
@@ -10,6 +10,7 @@ authors = [
 ]
 description = "A pure python package to communicate with SIM7600 modems."
 readme = "README.md"
+license = {file="LICENSE"}
 requires-python = ">=3.7"
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -19,6 +20,9 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Topic :: Communications :: Telephony",
+]
+dependencies = [
+    "pyserial",
 ]
 
 [project.urls]

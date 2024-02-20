@@ -1,10 +1,12 @@
 from setuptools import setup
 import codecs
 import os.path
+from pathlib import Path
 
 
 here = os.path.abspath(os.path.dirname(__file__))
-long_description = (here / "README.md").read_text()
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 
 def read(rel_path: str):
@@ -30,9 +32,6 @@ setup(
     author='Firefox2100',
     author_email='wangyunze16@gmail.com',
     description='A pure Python package to interface with SIM7600 modems.',
-    install_requires=[
-        "pyserial",
-    ],
     long_description=long_description,
     long_description_content_type='text/markdown'
 )
