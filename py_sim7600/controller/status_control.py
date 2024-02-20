@@ -10,7 +10,7 @@ from typing import Union
 
 from py_sim7600.controller import DeviceController
 from py_sim7600.exceptions import StatusControlException, DeviceException
-from py_sim7600.model import enums
+from py_sim7600.model import enums, sim_me
 
 
 class StatusController(DeviceController):
@@ -70,11 +70,14 @@ class StatusController(DeviceController):
         :rtype: enums.PhoneFunctionalityLevel
         """
 
-        result = self.device.send(
-            command='AT+CFUN?',
-            back='OK',
-            error_pattern=['ERROR']
-        )
+        try:
+            result = self.device.send(
+                command='AT+CFUN?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting function: {e}')
 
         pattern = r'\+CFUN: (\d)'
         match = re.search(pattern, result)
@@ -100,11 +103,14 @@ class StatusController(DeviceController):
         command = 'AT+CPIN='
 
         # Check the current PIN request status
-        result = self.device.send(
-            command='AT+CPIN?',
-            back='OK',
-            error_pattern=['ERROR']
-        )
+        try:
+            result = self.device.send(
+                command='AT+CPIN?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting PIN status: {e}')
 
         if 'READY' in result:
             # No PIN required
@@ -119,11 +125,14 @@ class StatusController(DeviceController):
             else:
                 command += puk + ',' + pin
 
-        self.device.send(
-            command=command,
-            back="OK",
-            error_pattern=['ERROR']
-        )
+        try:
+            self.device.send(
+                command=command,
+                back="OK",
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error entering PIN: {e}')
 
         return True
 
@@ -133,45 +142,65 @@ class StatusController(DeviceController):
 
         Corresponding command: AT+CICCID
 
-        :return: Results from device return buffer
+        :return: The ICCID of the SIM card
+        :rtype: str
         """
 
-        self.device.send(
-            command="AT+CICCID",
-            back="OK"
-        )
+        try:
+            result = self.device.send(
+                command='AT+CICCID',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting ICCID: {e}')
 
-        return self.device.result()
+        pattern = r'\+ICCID: (\w+)'
+        match = re.search(pattern, result)
 
-    def sim_access_general(self, command: str) -> str:
+        return match.group(1)
+
+    def sim_access_general(self, command: sim_me.SIMMECommand) -> sim_me.SIMMEResponse:
         """
         Generic SIM access
 
         Corresponding command: AT+CSIM
 
         :param command: Command passed from MT to SIM card
-        :return: Results from device return buffer
+        :return: SIM-ME response
+        :rtype: sim_me.SIMMEResponse
         """
 
-        # TODO: Add a more detailed check to SIM-ME commands.
+        apdu = command.apdu
+        apdu_length = len(apdu)
 
-        length = len(command)
+        at_command = f'AT+CSIM={apdu_length},{apdu}'
 
-        self.device.send(
-            command="AT+CSIM=" + str(length) + "," + command,
-            back="OK"
+        try:
+            result = self.device.send(
+                command=at_command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error sending APDU: {e}')
+
+        response_apdu_pattern = r'\+CSIM: (\d+),"(.+)"'
+        response_apdu = re.search(response_apdu_pattern, result).group(2)
+
+        return sim_me.SIMMEResponse.parse(
+            command_type=command.command_type,
+            response=response_apdu
         )
 
-        return self.device.result()
-
     def sim_access_restricted(self,
-                              command: int,
-                              file_id: int = None,
+                              command: enums.RestrictedSIMCommand,
+                              file_id: enums.ElementaryFileID = None,
                               p1: int = None,
                               p2: int = None,
                               p3: int = None,
                               data: str = None,
-                              ) -> str:
+                              ) -> sim_me.SIMMEResponse:
         """
         Restricted SIM access
 
@@ -183,66 +212,95 @@ class StatusController(DeviceController):
         :param p2: Second parameter for the command
         :param p3: Third parameter for the command
         :param data: Data to be written to the SIM
-        :return: Results from device return buffer
+        :return: SIM-ME response
+        :rtype: sim_me.SIMMEResponse
         """
 
-        from py_sim7600._command_lists import restricted_sim_command, restricted_sim_file_id
-
-        assert command in restricted_sim_command.keys(), "Illegal Command"
-
-        command_out = "AT+CRSM=" + str(command)
+        command_out = 'AT+CRSM=' + str(command.value)
 
         if file_id is not None:
-            assert file_id in restricted_sim_file_id.keys(), "Illegal File ID"
-
-            command_out += "," + str(file_id)
+            command_out += ',' + str(file_id.value)
         if p1 is not None:
-            command_out += "," + str(p1)
+            command_out += ',' + str(p1)
         if p2 is not None:
-            command_out += "," + str(p2)
+            command_out += ',' + str(p2)
         if p3 is not None:
-            command_out += "," + str(p3)
+            command_out += ',' + str(p3)
         if data is not None:
-            command_out += ',"' + str(data) + '"'
+            # Data needs to be in hexadecimal format
+            try:
+                assert len(data) % 2 == 0
+                assert all(c in '0123456789ABCDEF' for c in data)
+            except AssertionError:
+                raise StatusControlException('Data must be in hexadecimal format')
 
-        self.device.send(
-            command=command_out,
-            back="OK"
+            command_out += ',' + data
+
+        try:
+            result = self.device.send(
+                command=command_out,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error sending restricted SIM command: {e}')
+
+        return sim_me.SIMMEResponse.parse(
+            command_type=command.to_sim_me(),
+            response=result
         )
 
-        return self.device.result()
-
-    def pin_times(self) -> str:
+    def pin_times(self) -> tuple[int, int, int, int]:
         """
         Times remain to input SIM PIN/PUK
 
         Corresponding command: AT+SPIC
 
-        :return: Results from device return buffer
+        :return: The remaining times to input PIN1, PUK1, PIN2, PUK2 as a tuple
         """
 
-        self.device.send(
-            command="AT+SPIC",
-            back="OK"
+        try:
+            result = self.device.send(
+                command='AT+SPIC',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error reading remaining PIN input times: {e}')
+
+        pattern = r'\+SPIC: (\d+),(\d+),(\d+),(\d+)'
+        matches = re.search(pattern, result)
+
+        return (
+            int(matches.group(1)),
+            int(matches.group(2)),
+            int(matches.group(3)),
+            int(matches.group(4))
         )
 
-        return self.device.result()
-
-    def get_provider(self) -> str:
+    def get_provider(self) -> tuple[str, int]:
         """
         Get service provider name from SIM
 
         Corresponding command: AT+CSPN
 
-        :return: Results from device return buffer
+        :return: Provider name and whether the PLMN is displayed, in a tuple
+        :rtype: tuple
         """
 
-        self.device.send(
-            command="AT+CSPN?",
-            back="OK"
-        )
+        try:
+            result = self.device.send(
+                command='AT+CSPN?',
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting service provider name: {e}')
 
-        return self.device.result()
+        pattern = r'\+CSPN: "(\w+)",(\d)'
+        matches = re.search(pattern, result)
+
+        return matches.group(1), int(matches.group(2))
 
     def get_signal(self) -> str:
         """
