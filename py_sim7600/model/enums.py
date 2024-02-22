@@ -296,12 +296,46 @@ class BearerServiceConnectionElement(Enum):
     NON_TRANSPARENT = 1     # Non-transparent
 
 
+class CallState(Enum):
+    """
+    The state of a call.
+    """
+    ACTIVE = 0
+    HELD = 1
+    DIALING = 2
+    ALERTING = 3
+    INCOMING = 4
+    WAITING = 5
+    DISCONNECT = 6
+
+
+class BearerServiceMode(Enum):
+    """
+    The mode of bearer service in a data call.
+    """
+    VOICE = 0
+    DATA = 1
+    FAX = 2
+    UNKNOWN = 9
+
+
+class CallNumberType(Enum):
+    """
+    The type of the phone number in a call.
+    """
+    RESTRICTED = 128
+    INTERNATIONAL = 145
+    NATIONAL = 161
+    NETWORK_SPECIFIC = 177
+    OTHER = 129
+
+
 """
 The Enum classes in this section is for SIM-ME interface model.
 """
 
 
-class SIMMECommandType:
+class SIMMECommandType(Enum):
     """
     The SIM-ME command type.
     """

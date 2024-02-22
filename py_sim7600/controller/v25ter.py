@@ -157,7 +157,7 @@ class V25TERController(DeviceController):
         try:
             call_controller.set_control_voice_hangup(disconnect_ath=True)
         except Exception as e:
-            if not call_controller.check_control_voice_hangup():
+            if not call_controller.get_control_voice_hangup():
                 raise e
 
         try:

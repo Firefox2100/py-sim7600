@@ -6,8 +6,9 @@ remember to capture accordingly.
 import re
 
 from py_sim7600.controller import DeviceController
-from py_sim7600.exceptions import CallControlException
+from py_sim7600.exceptions import CallControlException, DeviceException
 from py_sim7600.model.enums import BearerServiceSpeed, BearerServiceName, BearerServiceConnectionElement
+from py_sim7600.model.call import Call
 
 
 class CallController(DeviceController):
@@ -34,14 +35,18 @@ class CallController(DeviceController):
         else:
             command += '1'
 
-        self.device.send(
-            command=command,
-            back="OK",
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting control voice hangup: {e}')
 
         return True
 
-    def check_control_voice_hangup(self) -> bool:
+    def get_control_voice_hangup(self) -> bool:
         """
         Check voice hang up control
 
@@ -53,31 +58,43 @@ class CallController(DeviceController):
 
         command = 'AT+CVHU?'
 
-        result = self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error checking control voice hangup: {e}')
 
         return '0' in result
 
-    def hang_up(self) -> bool:
+    def hang_up(self) -> int:
         """
         Hang up call
 
         Corresponding command: AT+CHUP
 
-        :return: True if successful
-        :rtype: bool
+        :return: Length of the call in seconds; 0 if no call is in progress
+        :rtype: int
         """
 
         command = 'AT+CHUP'
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error hanging up call: {e}')
 
-        return True
+        pattern = r'VOICE CALL:END: (\d{2})(\d{2})(\d{2})'
+        matches = re.search(pattern, result)
+
+        if matches:
+            return int(matches.group(1)) * 3600 + int(matches.group(2)) * 60 + int(matches.group(3))
+
+        return 0
 
     def set_bearer_type(self,
                         bearer_speed: BearerServiceSpeed,
@@ -106,14 +123,18 @@ class CallController(DeviceController):
 
         command += f'{bearer_speed.value},{bearer_name.value},{bearer_ce.value}'
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting bearer type: {e}')
 
         return True
 
-    def check_bearer_type(self) -> tuple[BearerServiceSpeed, BearerServiceName, BearerServiceConnectionElement]:
+    def get_bearer_type(self) -> tuple[BearerServiceSpeed, BearerServiceName, BearerServiceConnectionElement]:
         """
         Read selected bearer service type
 
@@ -126,20 +147,23 @@ class CallController(DeviceController):
 
         command = 'AT+CBST?'
 
-        result = self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error checking bearer type: {e}')
 
         pattern = r'\+CBST: (\d+),(\d+),(\d+)'
 
-        match = re.search(pattern, result)
+        matches = re.search(pattern, result)
 
-        if match:
+        if matches:
             return (
-                BearerServiceSpeed(int(match.group(1))),
-                BearerServiceName(int(match.group(2))),
-                BearerServiceConnectionElement(int(match.group(3))),
+                BearerServiceSpeed(int(matches.group(1))),
+                BearerServiceName(int(matches.group(2))),
+                BearerServiceConnectionElement(int(matches.group(3))),
             )
 
     def set_rlp_parameter(self,
@@ -163,7 +187,7 @@ class CallController(DeviceController):
         :param re_sequence_timer: Re-sequencing timer, in 10ms unit
         :return: True if setting successful
         :rtype: bool
-        :raises CallControlException:
+        :raises CallControlException: RLP version number need to be 0, 1 or 2
         """
 
         if rlp_version not in [0, 1, 2]:
@@ -179,17 +203,23 @@ class CallController(DeviceController):
                     command += f',{ack_timer}'
                     if retry_times is not None:
                         command += f',{retry_times}'
-                        if re_sequence_timer is not None:
-                            command += f',{rlp_version},{re_sequence_timer}'
+                        if rlp_version is not None:
+                            command += f',{rlp_version}'
+                            if re_sequence_timer is not None:
+                                command += f',{re_sequence_timer}'
 
-        self.device.send(
-            command=command,
-            back='OK',
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting RLP parameter: {e}')
 
         return True
 
-    def check_rlp_parameter(self) -> tuple[int, int, int, int, int, int]:
+    def get_rlp_parameter(self) -> list[tuple[int, ...]]:
         """
         Read RLP parameter
 
@@ -197,62 +227,200 @@ class CallController(DeviceController):
 
         :return: RLP version number, IWF to MS window size, MS to IWF window size, Acknowledgement timer,
                  Maximum number of retransmissions, and Re-sequencing timer as a tuple
-        :rtype: tuple[int, int, int, int, int, int]
+        :rtype: tuple[int, ...]
         """
 
         command = 'AT+CRLP?'
 
-        result = self.device.send(
-            command=command,
-            back='OK',
-        )
-
-        pattern = r'\+CRLP: (\d+),(\d+),(\d+),(\d+),(\d+),(\d+)'
-
-        match = re.search(pattern, result)
-
-        if match:
-            return (
-                int(match.group(1)),
-                int(match.group(2)),
-                int(match.group(3)),
-                int(match.group(4)),
-                int(match.group(5)),
-                int(match.group(6)),
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
             )
+        except DeviceException as e:
+            raise CallControlException(f'Error checking RLP parameter: {e}')
 
-    def service_report(self) -> str:
+        pattern = r'\+CRLP: [\d,]+'
+        matches = re.findall(pattern, result)
+
+        parameters = []
+
+        for match in matches:
+            values = match.split(': ')[1].split(',')
+            parameters.append(tuple(int(value) for value in values))
+
+        return parameters
+
+    def set_service_report(self, report=False) -> bool:
         """
-        Service reporting control
+        Set service reporting control
 
         Corresponding command: AT+CR
 
-        :return: Results from device return buffer
-        :raises CallControlException:
+        :param report: Enable or disable intermediate result code presentation
+        :return: True if successful
+        :rtype: bool
         """
-        raise NotImplementedError
 
-    def result_code(self) -> str:
+        command = f'AT+CR={int(report)}'
+
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting service reporting: {e}')
+
+        return True
+
+    def get_service_report(self) -> bool:
+        """
+        Get service reporting control status
+
+        Corresponding command: AT+CR
+
+        :return: Whether intermediate result code presentation is enabled
+        :rtype: bool
+        """
+
+        command = 'AT+CR?'
+
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting service reporting: {e}')
+
+        return '1' in result
+
+    def set_result_code(self, extended_format=False) -> bool:
         """
         Cellular result codes
 
         Corresponding command: AT+CRC
 
-        :return: Results from device return buffer
-        :raises CallControlException:
+        :param extended_format: Enable or disable extended format of incoming call indication
+        :return: True if successful
+        :rtype: bool
         """
-        raise NotImplementedError
 
-    def list_call(self) -> str:
+        command = f'AT+CRC={int(extended_format)}'
+
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting result code: {e}')
+
+        return True
+
+    def get_result_code(self) -> bool:
         """
-        List current calls
+        Get cellular result codes status
+
+        Corresponding command: AT+CRC
+
+        :return: Whether extended format of incoming call indication is enabled
+        :rtype: bool
+        """
+
+        command = 'AT+CRC?'
+
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting result code: {e}')
+
+        return '1' in result
+
+    def set_list_call(self, auto_report=False) -> bool:
+        """
+        Set auto list current calls
 
         Corresponding command: AT+CLCC
 
-        :return: Results from device return buffer
-        :raises CallControlException:
+        :param auto_report: Enable or disable automatic report of current calls when call status changes
+        :return: True if successful
+        :rtype: bool
         """
-        raise NotImplementedError
+
+        command = f'AT+CLCC={int(auto_report)}'
+
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting list call: {e}')
+
+        return True
+
+    def get_list_call(self) -> bool:
+        """
+        Get auto list current calls status
+
+        Corresponding command: AT+CLCC
+
+        :return: Whether automatic report of current calls when call status changes is enabled
+        :rtype: bool
+        """
+
+        command = 'AT+CLCC?'
+
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error setting list call: {e}')
+
+        return '1' in result
+
+    def list_call(self) -> list[Call]:
+        """
+        List all current calls
+
+        Corresponding command: AT+CLCC
+
+        :return:
+        """
+
+        command = 'AT+CLCC'
+
+        try:
+            result = self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR']
+            )
+        except DeviceException as e:
+            raise CallControlException(f'Error listing calls: {e}')
+
+        calls = []
+
+        pattern = r'\+CLCC: [\w,]+'
+        matches = re.findall(pattern, result)
+
+        for match in matches:
+            calls.append(Call.from_list_call(match))
+
+        return calls
 
     def extended_error(self) -> str:
         """
