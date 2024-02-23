@@ -134,3 +134,6 @@ dmypy.json
 
 # VIM swap files should be excluded
 *.swp
+
+# External documentations
+docs/_external/
