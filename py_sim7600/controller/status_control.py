@@ -11,6 +11,7 @@ from typing import Union
 from py_sim7600.controller import DeviceController
 from py_sim7600.exceptions import StatusControlException, DeviceException
 from py_sim7600.model import enums, sim_me
+from py_sim7600.model.signal_quality import SignalQuality
 
 
 class StatusController(DeviceController):
@@ -269,16 +270,16 @@ class StatusController(DeviceController):
             raise StatusControlException(f'Error reading remaining PIN input times: {e}')
 
         pattern = r'\+SPIC: (\d+),(\d+),(\d+),(\d+)'
-        matches = re.search(pattern, result)
+        match = re.search(pattern, result)
 
         return (
-            int(matches.group(1)),
-            int(matches.group(2)),
-            int(matches.group(3)),
-            int(matches.group(4))
+            int(match.group(1)),
+            int(match.group(2)),
+            int(match.group(3)),
+            int(match.group(4))
         )
 
-    def get_provider(self) -> tuple[str, int]:
+    def get_provider(self) -> tuple[str, bool]:
         """
         Get service provider name from SIM
 
@@ -292,91 +293,139 @@ class StatusController(DeviceController):
             result = self.device.send(
                 command='AT+CSPN?',
                 back='OK',
-                error_pattern=['ERROR']
+                error_pattern=['ERROR'],
             )
         except DeviceException as e:
             raise StatusControlException(f'Error getting service provider name: {e}')
 
         pattern = r'\+CSPN: "(\w+)",(\d)'
-        matches = re.search(pattern, result)
+        match = re.search(pattern, result)
 
-        return matches.group(1), int(matches.group(2))
+        return match.group(1), bool(int(match.group(2)))
 
-    def get_signal(self) -> str:
+    def get_signal(self) -> SignalQuality:
         """
         Query signal quality
 
         Corresponding command: AT+CSQ
 
-        :return: Results from device return buffer
+        :return: A SignalQuality object representing the signal quality
+        :rtype: SignalQuality
         """
 
-        self.device.send(
-            command="AT+CSQ",
-            back="OK"
-        )
+        try:
+            result = self.device.send(
+                command='AT+CSQ',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting signal quality: {e}')
 
-        return self.device.result()
+        pattern = r'\+CSQ: \d+,\d+'
+        match = re.search(pattern, result)
 
-    def set_csq(self, auto=0, csq=0, check=False) -> str:
+        if match:
+            return SignalQuality.from_quality_query(match.group())
+
+        raise StatusControlException('Invalid response')
+
+    def set_auto_csq(self, auto_report=False, when_changed=False) -> bool:
         """
         Set CSQ report
 
         Corresponding command: AT+AUTOCSQ
 
-        :return: Results from device return buffer
-        :raises StatusControlException: Auto or CSQ mode setting error
+        :param auto_report: Whether to automatically report CSQ
+        :param when_changed: Whether to report when CSQ changes, or every 5 seconds
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
+        command = f'AT+AUTOCSQ={int(auto_report)},{int(when_changed)}'
+
+        try:
             self.device.send(
-                command="AT+AUTOCSQ?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting CSQ report: {e}')
 
-            return self.device.result()
-        
-        if auto != 0 and auto != 1:
-            raise StatusControlException("Auto setting error")
-        if csq != 0 and csq != 1:
-            raise StatusControlException("CSQ setting error")
+        return True
 
-        command = "AT+AUTOCSQ=" + str(auto) + "," + str(csq)
+    def get_auto_csq(self) -> tuple[bool, bool]:
+        """
+        Get CSQ report settings
 
-        self.device.send(
-            command=command,
-            back="OK"
-        )
+        Corresponding command: AT+AUTOCSQ?
 
-        return self.device.result()
+        :return: Whether to automatically report CSQ and whether to report when CSQ changes
+        :rtype: tuple
+        """
 
-    def set_rssi(self, delta=5, check=False) -> str:
+        try:
+            result = self.device.send(
+                command='AT+AUTOCSQ?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting CSQ report settings: {e}')
+
+        pattern = r'\+AUTOCSQ: (\d),(\d)'
+        match = re.search(pattern, result)
+
+        return bool(int(match.group(1))), bool(int(match.group(2)))
+
+    def set_rssi(self, delta=5) -> bool:
         """
         Set RSSI delta change threshold
 
         Corresponding command: AT+CSQDELTA
 
-        :return: Results from device return buffer
+        :return: True if successful
+        :rtype: bool
         :raises StatusControlException: Delta value error
         """
 
-        if check:
-            self.device.send(
-                command="AT+CSQDELTA?",
-                back="OK"
-            )
-
-            return self.device.result()
-
         if delta < 0 or delta > 5:
-            raise StatusControlException("Delta value error")
+            raise StatusControlException('Delta value error')
 
-        self.device.send(
-            command="AT+CSQDELTA=" + str(delta),
-            back="OK"
-        )
+        try:
+            self.device.send(
+                command=f'AT+CSQDELTA={delta}',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting RSSI delta: {e}')
 
-        return self.device.result()
+        return True
+
+    def get_rssi(self) -> int:
+        """
+        Get RSSI delta change threshold
+
+        Corresponding command: AT+CSQDELTA?
+
+        :return: RSSI delta change threshold
+        :rtype: int
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+CSQDELTA?',
+                back='OK'
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting RSSI delta: {e}')
+
+        pattern = r'\+CSQDELTA: (\d)'
+        match = re.search(pattern, result)
+
+        return int(match.group(1))
 
     def set_urc(self, port: int, check=False) -> str:
         """

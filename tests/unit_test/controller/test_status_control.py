@@ -3,6 +3,7 @@ from numpy.testing import assert_equal
 
 from py_sim7600.controller.status_control import StatusController, StatusControlException
 from py_sim7600.model import enums
+from py_sim7600.model.signal_quality import SignalQuality
 
 
 @pytest.fixture
@@ -116,3 +117,54 @@ class TestStatusController:
         result = mock_status_controller.get_provider()
 
         assert_equal(result, ('CMCC', 0))
+
+    @pytest.mark.parametrize(
+        'mock_status_controller',
+        [(b'AT+CSQ\r', b'\r\n+CSQ: 22,0\r\nOK\r\n')],
+        indirect=True,
+    )
+    def test_get_signal(self, mock_status_controller):
+        result = mock_status_controller.get_signal()
+
+        assert result == SignalQuality(
+            strength=-69,
+            is_rscp=False,
+            bit_error_rate=0,
+        )
+
+    @pytest.mark.parametrize('mock_status_controller', [(b'AT+AUTOCSQ=1,1\r', b'\r\nOK\r\n')], indirect=True)
+    def test_set_auto_csq(self, mock_status_controller):
+        result = mock_status_controller.set_auto_csq(
+            auto_report=True,
+            when_changed=True,
+        )
+
+        assert result
+
+    @pytest.mark.parametrize(
+        'mock_status_controller',
+        [(b'AT+AUTOCSQ?\r', b'\r\n+AUTOCSQ: 1,1\r\nOK\r\n')],
+        indirect=True,
+    )
+    def test_get_auto_csq(self, mock_status_controller):
+        result = mock_status_controller.get_auto_csq()
+
+        assert result
+
+    @pytest.mark.parametrize('mock_status_controller', [(b'AT+CSQDELTA=3\r', b'\r\nOK\r\n')], indirect=True)
+    def test_set_rssi(self, mock_status_controller):
+        result = mock_status_controller.set_rssi(
+            delta=3,
+        )
+
+        assert result
+
+    @pytest.mark.parametrize(
+        'mock_status_controller',
+        [(b'AT+CSQDELTA?\r', b'\r\n+CSQDELTA: 3\r\nOK\r\n')],
+        indirect=True,
+    )
+    def test_get_rssi(self, mock_status_controller):
+        result = mock_status_controller.get_rssi()
+
+        assert result == 3

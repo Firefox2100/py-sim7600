@@ -27,7 +27,7 @@ class Device:
 
     def __init__(self, port: str, baud=115200, serial_device: serial.Serial = None):
         """
-        Constructor
+        Class to communicate directly with SIMCom device
 
         :param port: Port to connect to
         :param baud: Optional. Baud rate of the connection
@@ -277,3 +277,7 @@ class Device:
             responses = self.__spontaneous_responses
 
         return responses
+
+    @classmethod
+    def set_lock(cls, lock):
+        cls.__sem = lock
