@@ -84,3 +84,17 @@ class DeviceException(SIM7600Exception):
     Exception raised by Device class
     """
     pass
+
+
+class InterfaceException(SIM7600Exception):
+    """
+    Exception raised by Interface class
+    """
+    pass
+
+
+class AutoDeviceException(InterfaceException):
+    """
+    Exception raised by AutoDevice interface
+    """
+    pass
