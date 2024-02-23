@@ -5,9 +5,9 @@ About py-sim7600
 State of development
 ====================
 
-Current version: **Pre-Alpha 0.1.0**
+Current version: **0.1.0-alpha.1**
 
-This package is still in pre-alpha stage, and no release will be generated for now. The major functions are still incomplete, and the completed functions are not guarenteed to work. For now this package will not be uploaded to PyPI, so if you really want to use it now, please install with git.
+This package is still in alpha stage, and no release will be generated for now. The major functions are still incomplete, and the completed functions are not guarenteed to work. For now this package will not be uploaded to PyPI, so if you really want to use it now, please install with git.
 
 **Important**: I will only update the PyPI version when there is a change in usage, like bug fixes or feature updates. For code restructure, clean-up, documents modification, etc. I won't update the version. So please note that source installed from ``pip`` and pulled from GitHub may not be the same.
 
@@ -19,6 +19,7 @@ The achieved features and steps are:
 
 - Basic ability to communicate with SIM7600 modules.
 - PyPI module package
+- Pytest suite designed
 - Commands according to V.25TER
 
 The (currently) planned features are:
@@ -29,7 +30,7 @@ The (currently) planned features are:
 
 The (currently) planned steps are:
 
-- Pytest suite design
+- Usage of this library with other SIMCom modules
 
 The features or steps that are not planned to implement are:
 

@@ -9,5 +9,7 @@ Models
     :caption: Contents:
 
     enums
+    call
+    sim_me
 
 .. automodule:: py_sim7600.model
