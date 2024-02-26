@@ -16,3 +16,4 @@ pytest-xdist==3.5.0
 coverage==7.4.1
 numpy==1.26.4
 psutil==5.9.8
+pytz==2024.1
