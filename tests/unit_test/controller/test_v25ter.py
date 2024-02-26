@@ -25,6 +25,149 @@ def mock_v25ter_controller(mock_sim7600_device, request) -> V25TERController:
 
 
 class TestV25TERController:
+    @pytest.mark.parametrize('mock_v25ter_controller', [(b'AT"\r', b'\r\nOK\r\n')], indirect=True)
+    def test_command_with_timeout(self, mock_v25ter_controller):
+        """
+        Test the timeout for a command by sending a command that will not be responded to.
+
+        It's at the beginning to allow pytest-xdist to run this one first.
+        """
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.re_issue()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.dial(
+                number='1234567890',
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.dial_from(
+                target=3,
+                memory=enums.PhonebookStorage.SIM_PHONEBOOK,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.answer()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.switch_to_command()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.switch_to_data()
+
+        # ATI is not tested, as the command will always be responded to
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_baud(
+                baud=9600,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_baud()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_control_character(
+                format_control=enums.ControlCharacterFormat.D8S1,
+                parity=enums.ControlCharacterParity.NONE,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_control_character()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_data_flow(
+                rts=True,
+                cts=True,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_data_flow()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_dcd_function(
+                dcd=1,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.enable_command_echo(True)
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.current_config()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_dtr(
+                dtr=1,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_dsr(
+                always_on=True,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_result_format(
+                verbose=True,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.reset_config()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_result_presentation(
+                transmit=True,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_connect_format(
+                mode=1,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_connect_protocol(
+                report=False,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_connect_speed(
+                report_serial=False,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.save_config()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.restore_config()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_manufacturer()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_model()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_revision()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_serial()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.set_te_charset(
+                char_set=enums.TECharacterSet.IRA,
+            )
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_te_charset()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_international_subscriber()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_another_subscriber()
+
+        with pytest.raises(V25TERException):
+            mock_v25ter_controller.get_capabilities()
+
     @pytest.mark.parametrize('mock_v25ter_controller', [(b'A/\r', b'\r\nOK\r\n')], indirect=True)
     def test_re_issue(self, mock_v25ter_controller):
         result = mock_v25ter_controller.re_issue()
@@ -36,7 +179,7 @@ class TestV25TERController:
         result = mock_v25ter_controller.re_issue()
 
         assert result == 'OK'
-        assert mock_v25ter_controller.device.spontaneous_responses == ['Another response']
+        assert mock_v25ter_controller.device.urc == ['Another response']
 
     @pytest.mark.parametrize('mock_v25ter_controller', [(b'ATD1234567890;\r', b'\r\nOK\r\nVOICE CALL: BEGIN\r\n')],
                              indirect=True)

@@ -28,9 +28,12 @@ class V25TERController(DeviceController):
         :rtype: str
         """
 
-        result = self.device.send(
-            command='A/',
-        )
+        try:
+            result = self.device.send(
+                command='A/',
+            )
+        except DeviceException as e:
+            raise V25TERException(f'Cannot re-issue last command: {e}')
 
         return result
 

@@ -89,6 +89,9 @@ class SignalQuality:
 
         bit_error_rate = int(match.group(2))
 
+        if bit_error_rate < 0 or (bit_error_rate > 7 and bit_error_rate != 99):
+            raise ValueError('Invalid bit error rate value')
+
         return cls(strength, is_rscp, bit_error_rate)
 
     @property

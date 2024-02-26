@@ -6,7 +6,7 @@ remember to capture accordingly.
 """
 
 import re
-from typing import Union
+from datetime import datetime, timedelta, timezone
 
 from py_sim7600.controller import DeviceController
 from py_sim7600.exceptions import StatusControlException, DeviceException
@@ -417,7 +417,7 @@ class StatusController(DeviceController):
         try:
             result = self.device.send(
                 command='AT+CSQDELTA?',
-                back='OK'
+                back='OK',
             )
         except DeviceException as e:
             raise StatusControlException(f'Error getting RSSI delta: {e}')
@@ -427,251 +427,431 @@ class StatusController(DeviceController):
 
         return int(match.group(1))
 
-    def set_urc(self, port: int, check=False) -> str:
+    def set_urc(self, port=enums.URCPort.ALL) -> bool:
         """
         Configure URC destination interface
 
         Corresponding command: AT+CATR
 
-        :return: Results from device return buffer
-        :raises StatusControlException: Port setting error
+        :param port: The URC destination interface
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
+        try:
             self.device.send(
-                command="AT+CATR?",
-                back="OK"
+                command=f'AT+CATR={port.value}',
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting URC port: {e}')
 
-            return self.device.result()
+        return True
 
-        from py_sim7600._command_lists import urc_ports
+    def get_urc(self) -> enums.URCPort:
+        """
+        Get URC destination interface
 
-        if port not in urc_ports.keys():
-            raise StatusControlException("Port setting error")
-        
-        self.device.send(
-            command="AT+CATR=" + str(port),
-            back="OK"
-        )
+        Corresponding command: AT+CATR?
 
-        return self.device.result()
+        :return: URC destination interface
+        :rtype: enums.URCPort
+        """
 
-    def power_down(self) -> str:
+        try:
+            result = self.device.send(
+                command='AT+CATR?',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting URC port: {e}')
+
+        pattern = r'\+CATR: (\d)'
+        match = re.search(pattern, result)
+
+        return enums.URCPort(int(match.group(1)))
+
+    def power_down(self) -> bool:
         """
         Power down the module
 
         Corresponding command: AT+CPOF
 
-        :return: Results from device return buffer
+        :return: True if successful
+        :rtype: bool
         """
 
-        self.device.send(
-            command="AT+CPOF",
-            back="OK"
-        )
+        try:
+            self.device.send(
+                command='AT+CPOF',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error powering down: {e}')
 
-        return self.device.result()
+        return True
 
-    def reset(self) -> str:
+    def reset(self) -> bool:
         """
         Reset the module
 
         Corresponding command: AT+CRESET
 
-        :return: Results from device return buffer
+        :return: True if successful
+        :rtype: bool
         """
 
-        self.device.send(
-            command="AT+CRESET",
-            back="OK"
-        )
+        try:
+            self.device.send(
+                command='AT+CRESET',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error resetting: {e}')
 
-        return self.device.result()
+        return True
 
-    def accumulated_meter(self, password: str, check=False) -> str:
+    def reset_accumulated_meter(self, pin: str) -> bool:
         """
-        Accumulated call meter
+        Reset the accumulated call meter
 
         Corresponding command: AT+CACM
 
-        :return: Results from device return buffer
+        :param pin: The password to reset the meter, usually PIN2
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
+        command = f'AT+CACM="{pin}"'
+
+        try:
             self.device.send(
-                command="AT+CACM?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error resetting accumulated meter: {e}')
 
-            return self.device.result()
+        return True
 
-        command = "AT+CACM"
-        
-        if password != None:
-            command += '="' + password + '"'
-
-        self.device.send(
-            command=command,
-            back="OK"
-        )
-
-        return self.device.result()
-
-    def set_maximum(self, max: str, password: str, check=False) -> str:
+    def get_accumulated_meter(self) -> int:
         """
-        Accumulated call meter maximum
+        Get the accumulated call meter value
+
+        Corresponding command: AT+CACM?
+
+        :return: The accumulated call meter
+        :rtype: int
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+CACM?',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting accumulated meter: {e}')
+
+        pattern = r'\+CACM: "(\d{2})(\d{2})(\d{2})"'
+        match = re.search(pattern, result)
+
+        accumulated_time = int(match.group(3)) + int(match.group(2)) * 60 + int(match.group(1)) * 3600
+
+        return accumulated_time
+
+    def set_acm_maximum(self, max_sec: int, pin: str = None) -> bool:
+        """
+        Set the accumulated call meter maximum time
 
         Corresponding command: AT+CAMM
 
-        :return: Results from device return buffer
+        :param max_sec: The maximum time in seconds; 0 to disable
+        :param pin: The password to set the maximum, usually PIN2
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
+        acm_value = (str(max_sec // 3600).zfill(2) +
+                     str((max_sec % 3600) // 60).zfill(2) +
+                     str((max_sec % 3600) % 60).zfill(2))
+        
+        command = f'AT+CAMM="{acm_value}"'
+
+        if pin is not None:
+            command += f',"{pin}"'
+
+        try:
             self.device.send(
-                command="AT+CAMM?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting ACM maximum: {e}')
 
-            return self.device.result()
-        
-        command = 'AT+CAMM="' + max + '"'
+        return True
 
-        if password is not None:
-            command += ',"' + password + '"'
-        
-        self.device.send(
-            command=command,
-            back="OK"
-        )
+    def get_acm_maximum(self) -> int:
+        """
+        Get the accumulated call meter maximum time
 
-        return self.device.result()
+        Corresponding command: AT+CAMM?
 
-    def set_price(self, currency: str, ppu: str, password: str, check=False) -> str:
+        :return: The maximum time in seconds
+        :rtype: int
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+CAMM?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting ACM maximum: {e}')
+
+        pattern = r'\+CAMM: "(\d{2})(\d{2})(\d{2})"'
+        match = re.search(pattern, result)
+
+        max_time = int(match.group(3)) + int(match.group(2)) * 60 + int(match.group(1)) * 3600
+
+        return max_time
+
+    def set_price_per_unit(self, currency: str, ppu: float, pin: str = None) -> bool:
         """
         Price per unit and currency table
 
         Corresponding command: AT+CPUC
 
-        :return: Results from device return buffer
+        :param currency: The currency code, 3-letter code as per ISO 4217
+        :param ppu: The price per unit
+        :param pin: The password to set the price per unit, usually PIN2
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
+        command = f'AT+CPUC="{currency}","{ppu:.2f}"'
+
+        if pin is not None:
+            command += f',"{pin}"'
+
+        try:
             self.device.send(
-                command="AT+CPUC?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting price per unit: {e}')
 
-            return self.device.result()
-        
-        command = 'AT+CPUC="' + currency + '","' + ppu + '"'
+        return True
 
-        if password != None:
-            command += ',"' + password + '"'
-        
-        self.device.send(
-            command=command,
-            back="OK"
-        )
+    def get_price_per_unit(self) -> tuple[str, float]:
+        """
+        Get the price per unit and currency
 
-        return self.device.result()
+        Corresponding command: AT+CPUC?
 
-    def real_time_clock(self, time: str, check=False) -> str:
+        :return: The currency code and price per unit
+        :rtype: tuple
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+CPUC?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting price per unit: {e}')
+
+        pattern = r'\+CPUC: "(\w+)","([\d.]+)"'
+        match = re.search(pattern, result)
+
+        return match.group(1), float(match.group(2))
+
+    def set_rtc(self, time: datetime) -> bool:
         """
         Real time clock management
 
         Corresponding command: AT+CCLK
 
-        :return: Results from device return buffer
+        :param time: The time to set the RTC to
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
-            self.device.send(
-                command="AT+CCLK?",
-                back="OK"
-            )
-
-            return self.device.result()
+        time_str = time.strftime('%y/%m/%d,%H:%M:%S')
+        offset = int(time.utcoffset().total_seconds() // 60 // 15)
+        if offset >= 0:
+            time_str += f'+{offset:02d}'
+        else:
+            time_str += f'-{-offset:02d}'
         
-        command = 'AT+CCLK="' + time + '"'
+        command = f'AT+CCLK="{time_str}"'
 
-        self.device.send(
-            command=command,
-            back="OK"
-        )
+        try:
+            self.device.send(
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting RTC: {e}')
 
-        return self.device.result()
+        return True
 
-    def set_error_report(self, code=2, check=False) -> str:
+    def get_rtc(self) -> datetime:
+        """
+        Get the real time clock
+
+        Corresponding command: AT+CCLK?
+
+        :return: The real time clock
+        :rtype: datetime
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+CCLK?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting RTC: {e}')
+
+        pattern = r'\+CCLK: "(\d{2}/\d{2}/\d{2},\d{2}:\d{2}:\d{2})([+-]\d{2})?"'
+        match = re.search(pattern, result)
+
+        time = datetime.strptime(match.group(1), '%y/%m/%d,%H:%M:%S')
+        tz = match.group(2)
+        if tz:
+            offset = timedelta(minutes=int(tz) * 15)
+
+            time = time.replace(tzinfo=timezone(offset))
+
+        return time
+
+    def set_error_report(self, report_mode=enums.MEErrorReportMode.VERBOSE) -> bool:
         """
         Report mobile equipment error
 
         Corresponding command: AT+CMEE
 
-        :return: Results from device return buffer
-        :raises StatusControlException: Error level parameter error
+        :param report_mode: The error report mode
+        :return: True if successful
         """
 
-        if check:
+        command = f'AT+CMEE={report_mode.value}'
+
+        try:
             self.device.send(
-                command="AT+CMEE?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting error report: {e}')
 
-            return self.device.result()
-        
-        if code != 0 and code != 1 and code != 2:
-            raise StatusControlException("Error level parameter error")
+        return True
 
-        command = 'AT+CCLK=' + str(code)
+    def get_error_report(self) -> enums.MEErrorReportMode:
+        """
+        Get mobile equipment error report mode
 
-        self.device.send(
-            command=command,
-            back="OK"
-        )
+        Corresponding command: AT+CMEE?
 
-        return self.device.result()
+        :return: The error report mode
+        :rtype: enums.MEErrorReportMode
+        """
 
-    def get_activity(self) -> str:
+        try:
+            result = self.device.send(
+                command='AT+CMEE?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting error report: {e}')
+
+        pattern = r'\+CMEE: (\d)'
+        match = re.search(pattern, result)
+
+        return enums.MEErrorReportMode(int(match.group(1)))
+
+    def get_activity(self) -> enums.PhoneActivityStatus:
         """
         Phone activity status
 
         Corresponding command: AT+CPAS
 
-        :return: Results from device return buffer
+        :return: The phone activity status
+        :rtype: enums.PhoneActivityStatus
         """
 
-        self.device.send(
-            command="AT+CPAS",
-            back="OK"
-        )
+        try:
+            result = self.device.send(
+                command='AT+CPAS',
+                back='OK',
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting activity: {e}')
 
-        return self.device.result()
+        pattern = r'\+CPAS: (\d)'
+        match = re.search(pattern, result)
+        status = enums.PhoneActivityStatus(int(match.group(1)))
 
-    def set_imei(self, imei:str, check=False) -> str:
+        return status
+
+    def set_imei(self, imei: int) -> bool:
         """
         Set IMEI for the module
 
         Corresponding command: AT+SIMEI
 
-        :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :param imei: The IMEI to set
+        :return: True if successful
+        :rtype: bool
         """
 
-        if check:
+        command = f'AT+SIMEI={imei:015d}'
+
+        try:
             self.device.send(
-                command="AT+SIMEI?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting IMEI: {e}')
 
-            return self.device.result()
-        
-        self.device.send(
-            command="AT+SIMEI=" + imei,
-            back="OK"
-        )
+        return True
 
-        return self.device.result()
+    def get_imei(self) -> int:
+        """
+        Get IMEI of the module
+
+        Corresponding command: AT+SIMEI?
+
+        :return: The IMEI of the module
+        :rtype: int
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+SIMEI?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting IMEI: {e}')
+
+        pattern = r'\+SIMEI: (\d{15})'
+        match = re.search(pattern, result)
+
+        return int(match.group(1))
 
     def get_equipment_id(self) -> str:
         """
@@ -680,46 +860,77 @@ class StatusController(DeviceController):
         Corresponding command: AT+SMEID
 
         :param device: A SIM7600 device instance
-        :return: Results from device return buffer
+        :return: The equipment ID
+        :rtype: str
         """
 
-        self.device.send(
-            command="AT+SMEID?",
-            back="OK"
-        )
+        try:
+            result = self.device.send(
+                command="AT+SMEID?",
+                back="OK"
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting equipment ID: {e}')
 
-        return self.device.result()
+        pattern = r'\+SMEID: (\w+)'
+        match = re.search(pattern, result)
 
-    def voicemail_number(self, number: str, valid: bool, type: int, check=False) -> str:
+        return match.group(1)
+
+    def set_voicemail_number(self, number: str, valid: bool, number_type: enums.CallNumberType) -> bool:
         """
-        Voice Mail Subscriber number
+        Set voice Mail Subscriber number
 
         Corresponding command: AT+CSVM
 
-        :return: Results from device return buffer
-        :raises StatusControlException:
+        :return: True if successful
+        :raises StatusControlException: Invalid number or number type
         """
 
-        if check:
+        pattern = r'[\d\+]*'
+        if not re.match(pattern, number):
+            raise StatusControlException('Invalid number')
+
+        if number_type not in [
+            enums.CallNumberType.RESTRICTED,
+            enums.CallNumberType.INTERNATIONAL,
+            enums.CallNumberType.OTHER,
+        ]:
+            raise StatusControlException('Invalid number type')
+        
+        command = f'AT+CSVM={int(valid)},"{number}",{number_type.value}'
+
+        try:
             self.device.send(
-                command="AT+CSVM?",
-                back="OK"
+                command=command,
+                back='OK',
+                error_pattern=['ERROR'],
             )
+        except DeviceException as e:
+            raise StatusControlException(f'Error setting voicemail number: {e}')
 
-            return self.device.result()
-        
-        command = "AT+CSVM="
+        return True
 
-        if valid:
-            command += '1,"'
-        else:
-            command += '0,"'
-        
-        command += number + '",' + str(type)
+    def get_voicemail_number(self) -> tuple[bool, str, enums.CallNumberType]:
+        """
+        Get voice Mail Subscriber number
 
-        self.device.send(
-            command=command,
-            back="OK"
-        )
+        Corresponding command: AT+CSVM?
 
-        return self.device.result()
+        :return: The voicemail number, whether it is valid, and the number type
+        :rtype: tuple
+        """
+
+        try:
+            result = self.device.send(
+                command='AT+CSVM?',
+                back='OK',
+                error_pattern=['ERROR'],
+            )
+        except DeviceException as e:
+            raise StatusControlException(f'Error getting voicemail number: {e}')
+
+        pattern = r'\+CSVM: (\d),"([\d\+]+)",(\d+)'
+        match = re.search(pattern, result)
+
+        return bool(int(match.group(1))), match.group(2), enums.CallNumberType(int(match.group(3)))

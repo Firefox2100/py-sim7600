@@ -330,6 +330,38 @@ class CallNumberType(Enum):
     OTHER = 129
 
 
+class URCPort(Enum):
+    """
+    The port for outputting unsolicited result code.
+    """
+    ALL = 0                     # all ports
+    UART = 1                    # use UART port to output URCs
+    MODEM = 2                   # use MODEM port to output URCs
+    ATCOM = 3                   # use ATCOM port to output URCs
+    CMUX_VIRTUAL_PORT1 = 4      # use cmux virtual port1 to output URCs
+    CMUX_VIRTUAL_PORT2 = 5      # use cmux virtual port2 to output URCs
+    CMUX_VIRTUAL_PORT3 = 6      # use cmux virtual port3 to output URCs
+    CMUX_VIRTUAL_PORT4 = 7      # use cmux virtual port4 to output URCs
+
+
+class MEErrorReportMode(Enum):
+    """
+    The error report mode for Mobile Equipment error.
+    """
+    DISABLE = 0
+    ERROR_CODE = 1
+    VERBOSE = 2
+
+
+class PhoneActivityStatus(Enum):
+    """
+    The status of the phone activity.
+    """
+    READY = 0
+    RINGING = 3
+    IN_CALL = 4
+
+
 """
 The Enum classes in this section is for SIM-ME interface model.
 """

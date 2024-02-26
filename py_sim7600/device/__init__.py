@@ -22,8 +22,8 @@ class Device:
     Class to communicate directly with SIMCom device
     """
 
-    __spontaneous_responses: list[str] = []        # The responses that were initiated by the device
-    __sem = Semaphore()                            # Semaphore to prevent multiple threads from writing to the device
+    __urc: list[str] = []           # Unsolicited responses
+    __sem = Semaphore()             # Semaphore to prevent multiple threads from writing to the device
 
     def __init__(self, port: str, baud=115200, serial_device: serial.Serial = None):
         """
@@ -227,7 +227,7 @@ class Device:
                     continue
 
                 if result_message is not None:
-                    self.__spontaneous_responses.append(message)
+                    self.__urc.append(message)
                     continue
 
                 if back is not None and back in message:
@@ -239,7 +239,7 @@ class Device:
                     result_message = message
                     continue
 
-                self.__spontaneous_responses.append(message)
+                self.__urc.append(message)
 
             if error_message:
                 raise DeviceException(f"Device returned error: {error_message}")
@@ -250,9 +250,9 @@ class Device:
         raise DeviceException("Device returned no valid response")
 
     @property
-    def spontaneous_responses(self, clear=True) -> list[str]:
+    def urc(self, clear=True) -> list[str]:
         """
-        Get the spontaneous responses from the device
+        Get the unsolicited responses from the device
 
         :return: The spontaneous responses
         :rtype: list[str]
@@ -263,7 +263,7 @@ class Device:
             try:
                 matches = self.read_full_response('\r\n')
                 if matches is not None:
-                    self.__spontaneous_responses.extend(matches)
+                    self.__urc.extend(matches)
             except DeviceException:
                 pass
 
@@ -271,10 +271,10 @@ class Device:
 
         if clear:
             # No thread lock here, so the results are popped
-            while self.__spontaneous_responses:
-                responses.append(self.__spontaneous_responses.pop(0))
+            while self.__urc:
+                responses.append(self.__urc.pop(0))
         else:
-            responses = self.__spontaneous_responses
+            responses = self.__urc
 
         return responses
 
