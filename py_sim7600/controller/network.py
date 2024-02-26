@@ -1,247 +1,215 @@
 """
-This file contains classes related to network commands. This file may raise NetworkException,
+This file contains classes related to network commands.
+
+This file may raise NetworkException,
 remember to capture accordingly.
 """
 
-from py_sim7600.device import Device
+from py_sim7600.controller import DeviceController
 from py_sim7600.exceptions import NetworkException
+from py_sim7600.model import enums
 
 
-class Network:
+class NetworkController(DeviceController):
     """
     AT Commands for Network
     """
 
-    @staticmethod
-    def register(device: Device) -> str:
+    def register(self) -> str:
         """
         Network Registration
 
         Corresponding command: AT+CREG
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
-    
-    @staticmethod
-    def select_operator(device: Device) -> str:
+
+    def select_operator(self) -> str:
         """
         Operator selection
 
         Corresponding command: AT+COPS
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
     
-    @staticmethod
-    def facility_lock(device: Device) -> str:
+    def facility_lock(self) -> str:
         """
         Facility lock
 
         Corresponding command: AT+CLCK
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
     
-    @staticmethod
-    def change_password(device: Device) -> str:
+    def change_password(self) -> str:
         """
         Change password
 
         Corresponding command: AT+CPWD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def cug(device: Device) -> str:
+    def cug(self) -> str:
         """
         Closed User Group
 
         Corresponding command: AT+CCUG
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def uss_data(device: Device) -> str:
+    def uss_data(self) -> str:
         """
         Unstructured supplementary service data
 
         Corresponding command: AT+CUSD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def advice_of_charge(device: Device) -> str:
+    def advice_of_charge(self) -> str:
         """
         Advice of Charge
 
         Corresponding command: AT+CAOC
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def supplementary_notification(device: Device) -> str:
+    def supplementary_notification(self) -> str:
         """
         Supplementary service notifications
 
         Corresponding command: AT+CSSN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def operator_preference(device: Device) -> str:
+    def operator_preference(self) -> str:
         """
         Preferred operator list
 
         Corresponding command: AT+CPOL
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def operator_name(device: Device) -> str:
+    def operator_name(self) -> str:
         """
         Read operator names
 
         Corresponding command: AT+COPN
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def mode_preference(device: Device) -> str:
+    def mode_preference(self) -> str:
         """
         Preferred mode selection
 
         Corresponding command: AT+CNMP
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def band_preference(device: Device) -> str:
+    def band_preference(self) -> str:
         """
         Preferred band selection
 
         Corresponding command: AT+CNBP
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def acquisitions_preference(device: Device) -> str:
+    def acquisitions_preference(self) -> str:
         """
         Acquisitions order preference
 
         Corresponding command: AT+CNAOP
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def ue_info(device: Device) -> str:
+    def ue_info(self) -> str:
         """
         Inquiring UE system information
 
         Corresponding command: AT+CPSI
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def network_system(device: Device) -> str:
+    def network_system(self) -> str:
         """
         Show network system mode
 
         Corresponding command: AT+CNSMOD
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def eps_status(device: Device) -> str:
+    def eps_status(self) -> str:
         """
         EPS network registration status
 
         Corresponding command: AT+CEREG
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def auto_time(device: Device) -> str:
+    def auto_time(self) -> str:
         """
         Automatic time and time zone update
 
         Corresponding command: AT+CTZU
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
 
-    @staticmethod
-    def time_report(device: Device) -> str:
+    def time_report(self) -> str:
         """
         Time and time zone reporting
 
         Corresponding command: AT+CTZR
 
-        :param device: A SIM7600 device instance
         :return: Results from device return buffer
         :raises NetworkException:
         """
         raise NotImplementedError
+
