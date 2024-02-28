@@ -33,7 +33,7 @@ class V25TERController(DeviceController):
                 command='A/',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot re-issue last command: {e}')
+            raise V25TERException('Cannot re-issue last command') from e
 
         return result
 
@@ -71,7 +71,7 @@ class V25TERController(DeviceController):
                 error_pattern=['NO CARRIER', 'ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot dial number: {e}')
+            raise V25TERException('Cannot dial number') from e
 
         return True
 
@@ -117,7 +117,7 @@ class V25TERController(DeviceController):
                 error_pattern=['NO CARRIER', 'ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot dial number: {e}')
+            raise V25TERException('Cannot dial number') from e
 
         return True
 
@@ -139,7 +139,7 @@ class V25TERController(DeviceController):
                 error_pattern=['NO CARRIER'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot answer call: {e}')
+            raise V25TERException('Cannot answer call') from e
 
         return True
 
@@ -169,7 +169,7 @@ class V25TERController(DeviceController):
                 back='OK'
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot disconnect call: {e}')
+            raise V25TERException('Cannot disconnect call') from e
 
         return True
 
@@ -199,7 +199,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set auto answer: {e}')
+            raise V25TERException('Cannot set auto answer') from e
 
         return True
 
@@ -223,7 +223,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get auto answer: {e}')
+            raise V25TERException('Cannot get auto answer') from e
 
         times = int(result[0:3])
 
@@ -247,7 +247,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot switch to command mode: {e}')
+            raise V25TERException('Cannot switch to command mode') from e
 
         return True
 
@@ -268,7 +268,7 @@ class V25TERController(DeviceController):
                 error_pattern=['NO CARRIER', 'ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot switch to data mode: {e}')
+            raise V25TERException('Cannot switch to data mode') from e
 
         return True
 
@@ -288,7 +288,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get product identification: {e}')
+            raise V25TERException('Cannot get product identification') from e
 
         result_dict = {}
 
@@ -334,7 +334,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set baud rate: {e}')
+            raise V25TERException('Cannot set baud rate') from e
 
         return True
 
@@ -354,7 +354,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get baud rate: {e}')
+            raise V25TERException('Cannot get baud rate') from e
 
         pattern = r'\+IPR: (\d+)'
         result = re.search(pattern, result)
@@ -398,7 +398,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set control character framing: {e}')
+            raise V25TERException('Cannot set control character framing') from e
 
         return result
 
@@ -418,7 +418,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get control character framing: {e}')
+            raise V25TERException('Cannot get control character framing') from e
 
         pattern = r'\+ICF: (\d+),(\d+)'
         result = re.search(pattern, result)
@@ -455,7 +455,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set data flow control: {e}')
+            raise V25TERException('Cannot set data flow control') from e
 
         return True
 
@@ -476,7 +476,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get data flow control: {e}')
+            raise V25TERException('Cannot get data flow control') from e
 
         pattern = r'\+IFC: (\d+),(\d+)'
         result = re.search(pattern, result)
@@ -508,7 +508,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set DCD function: {e}')
+            raise V25TERException('Cannot set DCD function') from e
 
         return True
 
@@ -531,7 +531,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set command echo: {e}')
+            raise V25TERException('Cannot set command echo') from e
 
         return True
 
@@ -552,7 +552,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get current configuration: {e}')
+            raise V25TERException('Cannot get current configuration') from e
 
         config = {}
         items = (item.strip() for item in result.split('\r') if item.strip() and item.strip() != 'OK')
@@ -606,7 +606,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set DTR function: {e}')
+            raise V25TERException('Cannot set DTR function') from e
 
         return True
 
@@ -628,7 +628,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set DSR function: {e}')
+            raise V25TERException('Cannot set DSR function') from e
 
         return True
 
@@ -649,7 +649,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set result format: {e}')
+            raise V25TERException('Cannot set result format') from e
 
         return True
 
@@ -675,7 +675,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot reset configuration: {e}')
+            raise V25TERException('Cannot reset configuration') from e
 
         return True
 
@@ -703,7 +703,7 @@ class V25TERController(DeviceController):
             )
         except DeviceException as e:
             if transmit:
-                raise V25TERException(f'Cannot set result presentation: {e}')
+                raise V25TERException('Cannot set result presentation') from e
 
         return True
 
@@ -729,7 +729,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set connect format: {e}')
+            raise V25TERException('Cannot set connect format') from e
 
         return True
 
@@ -752,7 +752,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set connect protocol: {e}')
+            raise V25TERException('Cannot set connect protocol') from e
 
         return True
 
@@ -773,7 +773,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set connect speed: {e}')
+            raise V25TERException('Cannot set connect speed') from e
 
         return True
 
@@ -794,7 +794,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot save configuration: {e}')
+            raise V25TERException('Cannot save configuration') from e
 
         return True
 
@@ -815,7 +815,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot restore configuration: {e}')
+            raise V25TERException('Cannot restore configuration') from e
 
         return True
 
@@ -836,7 +836,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get manufacturer identification: {e}')
+            raise V25TERException('Cannot get manufacturer identification') from e
 
         return result.split('\r')[0]
 
@@ -857,7 +857,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get model identification: {e}')
+            raise V25TERException('Cannot get model identification') from e
 
         return result.split('\r')[0]
 
@@ -878,7 +878,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get revision identification: {e}')
+            raise V25TERException('Cannot get revision identification') from e
 
         revision = result.split('\r')[0].split(' ')[1]
 
@@ -901,7 +901,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get serial number identification: {e}')
+            raise V25TERException('Cannot get serial number identification') from e
 
         return int(result.split('\r')[0])
 
@@ -925,7 +925,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot set TE character set: {e}')
+            raise V25TERException('Cannot set TE character set') from e
 
         return True
 
@@ -945,7 +945,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get TE character set: {e}')
+            raise V25TERException('Cannot get TE character set') from e
 
         pattern = r'\+CSCS: "(\w+)"'
         result = re.search(pattern, result)
@@ -969,7 +969,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get international mobile subscriber identity: {e}')
+            raise V25TERException('Cannot get international mobile subscriber identity') from e
 
         pattern = r'(^\d{15})'
         result = re.search(pattern, result)
@@ -993,7 +993,7 @@ class V25TERController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get another international mobile subscriber identity: {e}')
+            raise V25TERException('Cannot get another international mobile subscriber identity') from e
 
         pattern = r'(^\d{15})'
         result = re.search(pattern, result)
@@ -1016,7 +1016,7 @@ class V25TERController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise V25TERException(f'Cannot get capabilities: {e}')
+            raise V25TERException('Cannot get capabilities') from e
 
         capabilities = {
             'CGSM': '+CGSM' in result,

@@ -57,7 +57,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting function: {e}')
+            raise StatusControlException('Error setting function') from e
 
         return True
 
@@ -78,7 +78,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting function: {e}')
+            raise StatusControlException('Error getting function') from e
 
         pattern = r'\+CFUN: (\d)'
         match = re.search(pattern, result)
@@ -111,7 +111,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting PIN status: {e}')
+            raise StatusControlException('Error getting PIN status') from e
 
         if 'READY' in result:
             # No PIN required
@@ -133,7 +133,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error entering PIN: {e}')
+            raise StatusControlException('Error entering PIN') from e
 
         return True
 
@@ -154,7 +154,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting ICCID: {e}')
+            raise StatusControlException('Error getting ICCID') from e
 
         pattern = r'\+ICCID: (\w+)'
         match = re.search(pattern, result)
@@ -184,7 +184,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error sending APDU: {e}')
+            raise StatusControlException('Error sending APDU') from e
 
         response_apdu_pattern = r'\+CSIM: (\d+),"(.+)"'
         response_apdu = re.search(response_apdu_pattern, result).group(2)
@@ -244,7 +244,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error sending restricted SIM command: {e}')
+            raise StatusControlException('Error sending restricted SIM command') from e
 
         return sim_me.SIMMEResponse.parse(
             command_type=command.to_sim_me(),
@@ -267,7 +267,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error reading remaining PIN input times: {e}')
+            raise StatusControlException('Error reading remaining PIN input times') from e
 
         pattern = r'\+SPIC: (\d+),(\d+),(\d+),(\d+)'
         match = re.search(pattern, result)
@@ -296,7 +296,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting service provider name: {e}')
+            raise StatusControlException('Error getting service provider name') from e
 
         pattern = r'\+CSPN: "(\w+)",(\d)'
         match = re.search(pattern, result)
@@ -320,7 +320,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting signal quality: {e}')
+            raise StatusControlException('Error getting signal quality') from e
 
         pattern = r'\+CSQ: \d+,\d+'
         match = re.search(pattern, result)
@@ -351,7 +351,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting CSQ report: {e}')
+            raise StatusControlException('Error setting CSQ report') from e
 
         return True
 
@@ -372,7 +372,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting CSQ report settings: {e}')
+            raise StatusControlException('Error getting CSQ report settings') from e
 
         pattern = r'\+AUTOCSQ: (\d),(\d)'
         match = re.search(pattern, result)
@@ -400,7 +400,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting RSSI delta: {e}')
+            raise StatusControlException('Error setting RSSI delta') from e
 
         return True
 
@@ -420,7 +420,7 @@ class StatusController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting RSSI delta: {e}')
+            raise StatusControlException('Error getting RSSI delta') from e
 
         pattern = r'\+CSQDELTA: (\d)'
         match = re.search(pattern, result)
@@ -445,7 +445,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting URC port: {e}')
+            raise StatusControlException('Error setting URC port') from e
 
         return True
 
@@ -465,7 +465,7 @@ class StatusController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting URC port: {e}')
+            raise StatusControlException('Error getting URC port') from e
 
         pattern = r'\+CATR: (\d)'
         match = re.search(pattern, result)
@@ -488,7 +488,7 @@ class StatusController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error powering down: {e}')
+            raise StatusControlException('Error powering down') from e
 
         return True
 
@@ -508,7 +508,7 @@ class StatusController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error resetting: {e}')
+            raise StatusControlException('Error resetting') from e
 
         return True
 
@@ -532,7 +532,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error resetting accumulated meter: {e}')
+            raise StatusControlException('Error resetting accumulated meter') from e
 
         return True
 
@@ -552,7 +552,7 @@ class StatusController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting accumulated meter: {e}')
+            raise StatusControlException('Error getting accumulated meter') from e
 
         pattern = r'\+CACM: "(\d{2})(\d{2})(\d{2})"'
         match = re.search(pattern, result)
@@ -589,7 +589,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting ACM maximum: {e}')
+            raise StatusControlException('Error setting ACM maximum') from e
 
         return True
 
@@ -610,7 +610,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting ACM maximum: {e}')
+            raise StatusControlException('Error getting ACM maximum') from e
 
         pattern = r'\+CAMM: "(\d{2})(\d{2})(\d{2})"'
         match = re.search(pattern, result)
@@ -644,7 +644,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting price per unit: {e}')
+            raise StatusControlException('Error setting price per unit') from e
 
         return True
 
@@ -665,7 +665,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting price per unit: {e}')
+            raise StatusControlException('Error getting price per unit') from e
 
         pattern = r'\+CPUC: "(\w+)","([\d.]+)"'
         match = re.search(pattern, result)
@@ -699,7 +699,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting RTC: {e}')
+            raise StatusControlException('Error setting RTC') from e
 
         return True
 
@@ -720,7 +720,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting RTC: {e}')
+            raise StatusControlException('Error getting RTC') from e
 
         pattern = r'\+CCLK: "(\d{2}/\d{2}/\d{2},\d{2}:\d{2}:\d{2})([+-]\d{2})?"'
         match = re.search(pattern, result)
@@ -753,7 +753,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting error report: {e}')
+            raise StatusControlException('Error setting error report') from e
 
         return True
 
@@ -774,7 +774,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting error report: {e}')
+            raise StatusControlException('Error getting error report') from e
 
         pattern = r'\+CMEE: (\d)'
         match = re.search(pattern, result)
@@ -797,7 +797,7 @@ class StatusController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting activity: {e}')
+            raise StatusControlException('Error getting activity') from e
 
         pattern = r'\+CPAS: (\d)'
         match = re.search(pattern, result)
@@ -825,7 +825,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting IMEI: {e}')
+            raise StatusControlException('Error setting IMEI') from e
 
         return True
 
@@ -846,7 +846,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting IMEI: {e}')
+            raise StatusControlException('Error getting IMEI') from e
 
         pattern = r'\+SIMEI: (\d{15})'
         match = re.search(pattern, result)
@@ -870,7 +870,7 @@ class StatusController(DeviceController):
                 back="OK"
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting equipment ID: {e}')
+            raise StatusControlException('Error getting equipment ID') from e
 
         pattern = r'\+SMEID: (\w+)'
         match = re.search(pattern, result)
@@ -907,7 +907,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error setting voicemail number: {e}')
+            raise StatusControlException('Error setting voicemail number') from e
 
         return True
 
@@ -928,7 +928,7 @@ class StatusController(DeviceController):
                 error_pattern=['ERROR'],
             )
         except DeviceException as e:
-            raise StatusControlException(f'Error getting voicemail number: {e}')
+            raise StatusControlException('Error getting voicemail number') from e
 
         pattern = r'\+CSVM: (\d),"([\d\+]+)",(\d+)'
         match = re.search(pattern, result)
