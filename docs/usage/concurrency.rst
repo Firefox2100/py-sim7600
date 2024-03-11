@@ -52,11 +52,11 @@ The ``threading.Semaphore`` is not multi-process safe, as the lock is not shared
     import multiprocessing
     from py_sim7600.device import Device
 
-    lock = multiprocessing.Lock()
+    lock = multiprocessing.Lock
 
-    Device.set_lock(lock)   # This set the lock as a class variable
+    Device.set_lock(lock)                   # This set the lock class as a class variable
+    Device.initialize_lock('your_port')     # This initializes the lock
 
     # Your fork code here
-
 
 This also applies to any web server based on workers, daemon, or other multi-process framework that does not explicitly share the lock between processes. They should provide a callback, or some other method to run code before forking happens. Refer to their documentation for more information.

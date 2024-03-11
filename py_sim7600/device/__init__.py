@@ -22,8 +22,10 @@ class Device:
     Class to communicate directly with SIMCom device
     """
 
+    __sem_class = Semaphore
+
     __urc: list[str] = []           # Unsolicited responses
-    __sem = Semaphore()             # Semaphore to prevent multiple threads from writing to the device
+    __sems = {}                     # Semaphore registry to prevent multiple threads from writing to the device
 
     def __init__(self, port: str, baud=115200, serial_device: serial.Serial = None):
         """
@@ -44,6 +46,8 @@ class Device:
         self.__power_key = 6
         self.__is_on = not self.__is_rpi
 
+        self.initialize_lock(port)
+
     def verify(self) -> bool:
         """
         Verify that this is indeed a SIMCom device
@@ -57,7 +61,7 @@ class Device:
         if not was_open:
             self.open()
 
-        with self.__sem:
+        with self.__sems[self.__port]:
             self.__serial.write(b'AT\r')
             response = self.read_full_response('\r\n')
 
@@ -210,7 +214,7 @@ class Device:
         if not self.__is_on:
             raise DeviceException("Device not on")
 
-        with self.__sem:
+        with self.__sems[self.__port]:
             try:
                 self.__serial.write((command + "\r").encode())
                 response = self.read_full_response(pattern, timeout)
@@ -259,7 +263,7 @@ class Device:
         """
 
         # Read the device again to get more spontaneous responses
-        with self.__sem:
+        with self.__sems[self.__port]:
             try:
                 matches = self.read_full_response('\r\n')
                 if matches is not None:
@@ -280,4 +284,8 @@ class Device:
 
     @classmethod
     def set_lock(cls, lock):
-        cls.__sem = lock
+        cls.__sem_class = lock
+
+    @classmethod
+    def initialize_lock(cls, port: str):
+        cls.__sems[port] = cls.__sem_class()
