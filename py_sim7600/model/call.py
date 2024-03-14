@@ -38,6 +38,27 @@ class Call:
         self.number_type = number_type
         self.phonebook_entry = phonebook_entry
 
+    def __eq__(self, other):
+        if not isinstance(other, Call):
+            return NotImplemented
+
+        if self.call_id != other.call_id:
+            return False
+        if self.oriented != other.oriented:
+            return False
+        if self.service_mode != other.service_mode:
+            return False
+        if self.multiparty != other.multiparty:
+            return False
+        if self.number != other.number:
+            return False
+        if self.number_type != other.number_type:
+            return False
+        if self.phonebook_entry != other.phonebook_entry:
+            return False
+
+        return True
+
     @classmethod
     def from_list_call(cls, response: str):
         """

@@ -42,7 +42,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting control voice hangup: {e}')
+            raise CallControlException('Error setting control voice hangup') from e
 
         return True
 
@@ -64,7 +64,7 @@ class CallController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise CallControlException(f'Error checking control voice hangup: {e}')
+            raise CallControlException('Error checking control voice hangup') from e
 
         return '0' in result
 
@@ -86,7 +86,7 @@ class CallController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise CallControlException(f'Error hanging up call: {e}')
+            raise CallControlException('Error hanging up call') from e
 
         pattern = r'VOICE CALL:END: (\d{2})(\d{2})(\d{2})'
         matches = re.search(pattern, result)
@@ -130,7 +130,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting bearer type: {e}')
+            raise CallControlException('Error setting bearer type') from e
 
         return True
 
@@ -153,7 +153,7 @@ class CallController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise CallControlException(f'Error checking bearer type: {e}')
+            raise CallControlException('Error checking bearer type') from e
 
         pattern = r'\+CBST: (\d+),(\d+),(\d+)'
 
@@ -215,7 +215,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting RLP parameter: {e}')
+            raise CallControlException('Error setting RLP parameter') from e
 
         return True
 
@@ -238,7 +238,7 @@ class CallController(DeviceController):
                 back='OK',
             )
         except DeviceException as e:
-            raise CallControlException(f'Error checking RLP parameter: {e}')
+            raise CallControlException('Error checking RLP parameter') from e
 
         pattern = r'\+CRLP: [\d,]+'
         matches = re.findall(pattern, result)
@@ -271,7 +271,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting service reporting: {e}')
+            raise CallControlException('Error setting service reporting') from e
 
         return True
 
@@ -294,7 +294,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting service reporting: {e}')
+            raise CallControlException('Error setting service reporting') from e
 
         return '1' in result
 
@@ -318,7 +318,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting result code: {e}')
+            raise CallControlException('Error setting result code') from e
 
         return True
 
@@ -341,7 +341,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting result code: {e}')
+            raise CallControlException('Error setting result code') from e
 
         return '1' in result
 
@@ -365,7 +365,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting list call: {e}')
+            raise CallControlException('Error setting list call') from e
 
         return True
 
@@ -388,7 +388,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error setting list call: {e}')
+            raise CallControlException('Error setting list call') from e
 
         return '1' in result
 
@@ -410,7 +410,7 @@ class CallController(DeviceController):
                 error_pattern=['ERROR']
             )
         except DeviceException as e:
-            raise CallControlException(f'Error listing calls: {e}')
+            raise CallControlException('Error listing calls') from e
 
         calls = []
 
