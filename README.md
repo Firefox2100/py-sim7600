@@ -6,7 +6,7 @@ This is a PyPI package to interface with SIM7600 modems.
 
 This is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this software. If not, see http://www.gnu.org/licenses/.
 
-This project also utilizes third part libraries and tools, like Python, py-serial, etc. They are listed under separate licenses, and their copyright and credit should goes to their original authors. This software will not distribute these source code or executables in any form.
+This project also utilizes third part libraries and tools, like Python, py-serial, etc. They are listed under separate licenses, and their copyright and credit should go to their original authors. This software will not distribute these source code or executables in any form.
 
 Please note that not all operations and modifications with SIM7600 are legal in all countries and regions. Use this project at your own discretion.
 
@@ -18,9 +18,9 @@ This library provides a way to communicate and control SIM7600 modems with pure 
 
 To use this library you will need:
 
-- A compatible SIM7600 development board. This library communicates to the modem with serial port, so the module must be able to accept standart ``AT`` commands from serial connection. Any custom made or modified modules that use custom client or differnet command set will NOT be supported. This library is known to work will all Waveshare SIM7600 modems.
+- A compatible SIM7600 development board. This library communicates to the modem with serial port, so the module must be able to accept standard ``AT`` commands from serial connection. Any custom-made or modified modules that use custom client or different command set will NOT be supported. This library is known to work will all WaveShare SIM7600 modems.
 - A Python environment >= 3.7.
-- Access to serial port. Make sure your machine has serial port, andthe user to execute this library has the access right to it. In some OS it might be necessary to install drivers.
+- Access to serial port. Make sure your machine has serial port, and the user to execute this library has the access right to it. In some OS it might be necessary to install drivers.
 
 ### Usage
 
@@ -38,9 +38,9 @@ To install the package. In the future, this package **might** be uploaded to PyP
 
 ## State of development
 
-Current version: **Pre-Aplha 0.1.0**
+Current version: **Pre-Alpha 0.1.0**
 
-This package is still in pre-alpha stage, and no release will be generated for now. The major functions are still incomplete, and the completed functions are not guarenteed to work. For now this package will not be uploaded to PyPI, so if you really want to use it now, please install with git.
+This package is still in pre-alpha stage, and no release will be generated for now. The major functions are still incomplete, and the completed functions are not guaranteed to work. For now this package will not be uploaded to PyPI, so if you really want to use it now, please install with git.
 
 ### Roadmap
 
@@ -70,8 +70,8 @@ Currently this project is developed and maintained by myself. It's too large a p
 
 ### Bug tracking
 
-The bug tracking should be in this repository as issues. Feel free to open an issue for bugs or suggestions, but please properly tag it, and check if there're duplications. There're templates for issues created, but if it doesn't fit the purpose, feel free to write another one.
+The bug tracking should be in this repository as issues. Feel free to open an issue for bugs or suggestions, but please properly tag it, and check if there are duplications. There are templates for issues created, but if it doesn't fit the purpose, feel free to write another one.
 
 ### Pull request
 
-You can open any pull request without contacting me. Any improvements to this project is welcomed, and I'll merge them as fast as I could, if there's no confliction or bugs in the pull request.
+You can open any pull request without contacting me. Any improvements to this project is welcomed, and I'll merge them as fast as I could, if there's no conflict or bugs in the pull request.
