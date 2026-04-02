@@ -1,33 +1,42 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "py-sim7600"
-dynamic = ["version"]
 authors = [
     { name = "Firefox2100", email = "wangyunze16@gmail.com" },
 ]
 description = "A pure python package to communicate with SIM7600 modems."
 readme = "README.md"
-license = {file="LICENSE"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Topic :: Communications :: Telephony",
 ]
 dependencies = [
-    "pyserial",
+    "pyserial>=3.5",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    "pytest~=9.0.2",
+    "pytest-cov~=7.1.0",
+    "numpy~=2.4.4",
+    "psutil~=7.2.2",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/Firefox2100/py-sim7600"
-"Bug Tracker" = "https://github.com/Firefox2100/py-sim7600/issues"
+Homepage = "https://github.com/Firefox2100/py-sim7600"
+Repository = "https://github.com/Firefox2100/py-sim7600.git"
+Issues = "https://github.com/Firefox2100/py-sim7600/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "py_sim7600.__version__"}

@@ -1,8 +1,6 @@
 import pytest
 from numpy.testing import assert_equal
 
-import tests
-
 from py_sim7600.model import enums
 from py_sim7600.controller.call_control import CallController, CallControlException
 

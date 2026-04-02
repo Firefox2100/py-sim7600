@@ -1,6 +1,5 @@
 import pytest
-from datetime import datetime
-from pytz import timezone
+from datetime import datetime, timezone
 from numpy.testing import assert_equal
 
 from py_sim7600.controller.status_control import StatusController, StatusControlException
@@ -114,7 +113,7 @@ class TestStatusController:
 
         with pytest.raises(StatusControlException):
             mock_status_controller.set_rtc(
-                time=datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone('UTC')),
+                time=datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             )
 
         with pytest.raises(StatusControlException):
@@ -386,7 +385,7 @@ class TestStatusController:
         indirect=True,
     )
     def test_set_rtc(self, mock_status_controller):
-        time = datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone('UTC'))
+        time = datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
         result = mock_status_controller.set_rtc(
             time=time,
@@ -402,7 +401,7 @@ class TestStatusController:
     def test_get_rtc(self, mock_status_controller):
         result = mock_status_controller.get_rtc()
 
-        assert result == datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone('UTC'))
+        assert result == datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 
     @pytest.mark.parametrize('mock_status_controller', [(b'AT+CMEE=0\r', b'\r\nOK\r\n')], indirect=True)
     def test_set_error_report(self, mock_status_controller):
